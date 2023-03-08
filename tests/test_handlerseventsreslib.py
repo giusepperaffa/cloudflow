@@ -64,3 +64,11 @@ def test_multi_handlers_and_events(get_test_files_folder, test_file, \
         he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
     assert he_identifier_obj.get_num_of_events() == expected_num_of_events
     assert he_identifier_obj.get_num_of_handlers() == expected_num_of_handlers
+
+def test_multi_events_from_same_service(get_test_files_folder):
+    test_file = os.path.join(get_test_files_folder, 'serverless_multi_events_from_same_service.yml')
+    with open(test_file, mode='r') as file_obj:
+        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
+        he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
+    assert he_identifier_obj.get_num_of_events() == 7
+    assert he_identifier_obj.get_num_of_handlers() == 6
