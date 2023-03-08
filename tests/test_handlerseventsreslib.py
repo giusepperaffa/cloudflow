@@ -51,3 +51,16 @@ def test_handlers_with_and_without_events(get_test_files_folder):
         he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
     assert he_identifier_obj.get_num_of_events() == 2
     assert he_identifier_obj.get_num_of_handlers() == 3
+
+@pytest.mark.parametrize("test_file, expected_num_of_events, expected_num_of_handlers", [\
+        ('serverless_two_handlers_two_events.yml', 2, 2),
+        ('serverless_five_handlers_five_events.yml', 5, 5),
+    ])
+def test_multi_handlers_and_events(get_test_files_folder, test_file, \
+    expected_num_of_events, expected_num_of_handlers):
+    test_file = os.path.join(get_test_files_folder, test_file)
+    with open(test_file, mode='r') as file_obj:
+        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
+        he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
+    assert he_identifier_obj.get_num_of_events() == expected_num_of_events
+    assert he_identifier_obj.get_num_of_handlers() == expected_num_of_handlers
