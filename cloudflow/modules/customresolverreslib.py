@@ -1,0 +1,111 @@
+# ========================================
+# Import Python Modules (Standard Library)
+# ========================================
+import re
+import yaml
+
+# =======
+# Classes
+# =======
+class YAMLResolverCls:
+    # ==== Constructor ===
+    def __init__(self, yaml_file):
+        """
+        The full path of the YAML file has to be passed to the constructor.
+        """
+        self.yaml_file = yaml_file
+        self.init_ref_dict()
+
+    # === Method ===
+    def get_root(self):
+        """
+        Method that maps the unresolved YAML file onto an in-memory data
+        structure that can be easily traversed and modified.
+        """
+        # More information about the yaml.compose function avalable at:
+        # https://realpython.com/python-yaml/
+        with open(self.yaml_file, mode='r') as file_obj:
+            self.root = yaml.compose(file_obj, yaml.BaseLoader)
+
+    # === Method ===
+    def init_ref_dict(self):
+        """
+        Method that maps the unresolved YAML file onto a reference dictionary.
+        """
+        with open(self.yaml_file, mode='r') as file_obj:
+            self.ref_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
+
+    # === Method ===
+    def _process_value(self, value):
+        """
+        Method that recursively processes a value extracted from the YAML file
+        to resolve it.
+        """
+        # Regular expression used to identify unresolved values
+        unres_val_reg_exp = re.compile(r'\$\{(.*)\}')
+        if unres_val_reg_exp.search(value) is not None:
+            extracted_str = unres_val_reg_exp.search(value).group(1)
+            try:
+                # This control statement deals with the Serverless Framework
+                # syntax that allows specifying a value and a fallback value.
+                # The latter is the one processed, because when this syntax
+                # is used, the value is normally taken from the cli. Processing
+                # of options passed via cli is currently not supported. Info at:
+                # https://www.serverless.com/framework/docs/guides/parameters
+                if ',' in extracted_str:
+                    extracted_str = extracted_str.split(',')[1].strip()
+                # The following code assumes that there are no other occurrences
+                # of ${...} within the extracted string.
+                res_value = self.ref_dict
+                for key in re.sub('^\$?\{?self:', '', extracted_str).split('.', 1):
+                    # The dictionary method get is not used in the following
+                    # code, as extracting None when a dictionary key is invalid
+                    # breaks the yaml module parser.
+                    try:
+                        res_value = res_value[key]
+                    except KeyError:
+                        raise ValueError
+                return res_value
+            except Exception as e:
+                print(f'--- Value {extracted_str} could not be resolved ---')
+                return value
+        else:
+            return value
+
+    # === Method ===
+    def resolve_yaml(self, output='dict'):
+        """
+        Method that returns the resolved YAML file. The input parameter
+        output (string) determines the type of the returned object (two
+        values only supported: 'dict' and 'str').
+        """
+        self.get_root()
+        self._visit(self.root)
+        if output == 'dict':
+            return yaml.load(yaml.serialize(self.root), Loader=yaml.BaseLoader)
+        elif output == 'str':
+            return yaml.serialize(self.root)
+        else:
+            raise ValueError('--- Unrecognized output type ---')
+
+    # === Method ===
+    def _visit(self, node):
+        """
+        Method used to recursively visit the in-memory data structure mapping
+        the YAML file being processed. Traversed value nodes are processed by
+        calling a dedicated method of the class.
+        """
+        # Code developed starting from example avalable at:
+        # https://realpython.com/python-yaml/
+        if isinstance(node, yaml.ScalarNode):
+            node.value = self._process_value(node.value)
+            # Reference dictionary update. It is necessary to ensure that it
+            # contains all the resolved values, as the successful resolution
+            # of some values might depend upon the resolution of others.
+            self.ref_dict = yaml.load(yaml.serialize(self.root), Loader=yaml.BaseLoader)
+            return node.value
+        elif isinstance(node, yaml.SequenceNode):
+            return [self._visit(child) for child in node.value]
+        elif isinstance(node, yaml.MappingNode):
+            return {self._visit(key): self._visit(value) for key, value in node.value}
+
