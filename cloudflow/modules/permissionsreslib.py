@@ -48,6 +48,10 @@ class PermissionsIdentifierCls:
             print('--- Exception raised - No information extracted ---')
 
     # === Method ===
+    def get_num_of_services(self):
+        return len(self.perm_dict)
+
+    # === Method ===
     def pretty_print_perm_dict(self):
         for service in sorted(self.perm_dict):
             header_str = f'*** Service: {service} ***'
