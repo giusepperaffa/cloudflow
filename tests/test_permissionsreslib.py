@@ -62,3 +62,11 @@ def test_iam_old_syntax_one_service(get_test_files_folder):
         perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
     assert perm_identifier_obj.get_num_of_services() == 1
     assert perm_identifier_obj.perm_dict['s3'] == set(['Get*', 'List*'])
+
+def test_iam_requiring_resolution(get_test_files_folder):
+    test_file = os.path.join(get_test_files_folder, 'serverless_iam_requiring_resolution.yml')
+    with open(test_file, mode='r') as file_obj:
+        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
+        perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
+    assert perm_identifier_obj.get_num_of_services() == 1
+    assert perm_identifier_obj.perm_dict['undefined'] == set(['${file(${self:custom.iam.${self:provider.stage}})}'])
