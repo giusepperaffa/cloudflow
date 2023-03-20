@@ -43,8 +43,9 @@ class YAMLResolverCls:
         """
         # Regular expression used to identify unresolved values
         unres_val_reg_exp = re.compile(r'\$\{(.*)\}')
-        if unres_val_reg_exp.search(value) is not None:
-            extracted_str = unres_val_reg_exp.search(value).group(1)
+        search_obj = unres_val_reg_exp.search(value)
+        if search_obj is not None:
+            extracted_str = search_obj.group(1)
             try:
                 # This control statement deals with the Serverless Framework
                 # syntax that allows specifying a value and a fallback value.
@@ -65,7 +66,8 @@ class YAMLResolverCls:
                         res_value = res_value[key]
                     except KeyError:
                         raise ValueError
-                return res_value
+                return self._process_value(value[:search_obj.start()]) + \
+                    res_value + self._process_value(value[search_obj.end():])
             except Exception as e:
                 print(f'--- Value {extracted_str} could not be resolved ---')
                 return value
