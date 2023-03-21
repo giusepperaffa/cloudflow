@@ -48,7 +48,7 @@ def test_unresolved_value_within_file(get_test_files_folder, get_multi_unresolve
     test_file = os.path.join(get_test_files_folder, get_multi_unresolved_values_file)
     yaml_resolver_obj = YAMLResolverCls(test_file)
     resolved_yaml_dict = yaml_resolver_obj.resolve_yaml('dict')
-    assert resolved_yaml_dict['provider']['iamRoleStatements'] == 'Unknown'
+    assert resolved_yaml_dict['provider']['iamRoleStatements'] == 'file(./configs/stage/iam.yml)'
 
 def test_unresolvable_value(get_test_files_folder, get_multi_unresolved_values_file):
     test_file = os.path.join(get_test_files_folder, get_multi_unresolved_values_file)
