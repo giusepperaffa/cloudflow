@@ -6,11 +6,10 @@ import pytest
 import yaml
 import sys
 
-# =========================
-# Update Python Search Path
-# =========================
+# ================
+# Script Variables
+# ================
 repo_full_path = os.sep.join(os.path.realpath(__file__).split(os.sep)[:-2])
-sys.path.append(repo_full_path)
 
 # ========================================
 # Import Python Modules (Project-specific)
