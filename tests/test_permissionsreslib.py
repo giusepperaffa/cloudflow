@@ -35,6 +35,11 @@ def test_one_service_cf_resource_syntax(get_test_files_folder):
     assert perm_identifier_obj.get_num_of_services() == 1
     assert perm_identifier_obj.perm_dict['dynamodb'] == \
         set(['Query', 'Scan', 'GetItem', 'PutItem', 'UpdateItem', 'DeleteItem'])
+    assert len(perm_identifier_obj.perm_res_dict) == 1
+    assert len(list(perm_identifier_obj.perm_res_dict.values())[0]) == 6
+    assert set(list(perm_identifier_obj.perm_res_dict.values())[0]) == \
+        set([('dynamodb', 'Query'), ('dynamodb', 'Scan'), ('dynamodb', 'GetItem'), \
+             ('dynamodb', 'PutItem'), ('dynamodb', 'UpdateItem'), ('dynamodb', 'DeleteItem')])
 
 def test_one_service_arn_resource_syntax(get_test_files_folder):
     test_file = os.path.join(get_test_files_folder, 'serverless_one_service_arn_resource_syntax.yml')
@@ -44,6 +49,8 @@ def test_one_service_arn_resource_syntax(get_test_files_folder):
     assert perm_identifier_obj.get_num_of_services() == 1
     assert perm_identifier_obj.perm_dict['dynamodb'] == \
         set(['Query', 'Scan', 'GetItem', 'PutItem', 'UpdateItem', 'DeleteItem'])
+    assert len(perm_identifier_obj.perm_res_dict) == 1
+    assert len(list(perm_identifier_obj.perm_res_dict.values())[0]) == 6
 
 def test_two_services(get_test_files_folder):
     test_file = os.path.join(get_test_files_folder, 'serverless_two_services.yml')
@@ -53,6 +60,8 @@ def test_two_services(get_test_files_folder):
     assert perm_identifier_obj.get_num_of_services() == 2
     assert len(perm_identifier_obj.perm_dict['dynamodb']) == 7
     assert perm_identifier_obj.perm_dict['s3'] == set(['*'])
+    assert len(perm_identifier_obj.perm_res_dict) == 2
+    assert set([('s3', '*')]) in list(perm_identifier_obj.perm_res_dict.values())
 
 def test_iam_old_syntax_one_service(get_test_files_folder):
     test_file = os.path.join(get_test_files_folder, 'serverless_iam_old_syntax_one_service.yml')
@@ -61,6 +70,8 @@ def test_iam_old_syntax_one_service(get_test_files_folder):
         perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
     assert perm_identifier_obj.get_num_of_services() == 1
     assert perm_identifier_obj.perm_dict['s3'] == set(['Get*', 'List*'])
+    assert '*' in perm_identifier_obj.perm_res_dict
+    assert ('s3', 'Get*') in perm_identifier_obj.perm_res_dict['*']
 
 def test_iam_requiring_resolution(get_test_files_folder):
     test_file = os.path.join(get_test_files_folder, 'serverless_iam_requiring_resolution.yml')
@@ -69,6 +80,9 @@ def test_iam_requiring_resolution(get_test_files_folder):
         perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
     assert perm_identifier_obj.get_num_of_services() == 1
     assert perm_identifier_obj.perm_dict['undefined'] == set(['${file(${self:custom.iam.${self:provider.stage}})}'])
+    assert len(perm_identifier_obj.perm_res_dict) == 1
+    assert 'undefined' in perm_identifier_obj.perm_res_dict
+    assert perm_identifier_obj.perm_res_dict['undefined'] == set(['${file(${self:custom.iam.${self:provider.stage}})}'])
 
 def test_multi_services_resources(get_test_files_folder):
     test_file = os.path.join(get_test_files_folder, 'serverless_multi_services_resources.yml')
@@ -80,6 +94,8 @@ def test_multi_services_resources(get_test_files_folder):
     assert perm_identifier_obj.perm_dict['rekognition'] == set(['*'])
     assert perm_identifier_obj.perm_dict['dynamodb'] == \
         set(['Query', 'Scan', 'GetItem', 'PutItem', 'UpdateItem', 'DeleteItem'])
+    assert len(perm_identifier_obj.perm_res_dict) == 4
+    assert perm_identifier_obj.perm_res_dict['*'] == set([('rekognition', '*')])
 
 def test_iam_old_syntax_multi_services_resources(get_test_files_folder):
     test_file = os.path.join(get_test_files_folder, 'serverless_iam_old_syntax_multi_services_resources.yml')
@@ -91,3 +107,7 @@ def test_iam_old_syntax_multi_services_resources(get_test_files_folder):
         set(['ListBucket', 'GetObject', 'PutObject'])
     assert perm_identifier_obj.perm_dict['rds'] == \
         set(['DownloadCompleteDBLogFile', 'DescribeDBLogFiles'])
+    assert len(perm_identifier_obj.perm_res_dict) == 4
+    assert '*' in perm_identifier_obj.perm_res_dict
+    assert set([('s3', 'GetObject'), ('s3', 'PutObject')]) in \
+        list(perm_identifier_obj.perm_res_dict.values())
