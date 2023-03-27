@@ -5,6 +5,11 @@ import collections
 import yaml
 import sys
 
+# ========================================
+# Import Python Modules (Project Specific)
+# ========================================
+from cloudflow.utils.customprintreslib import print_table
+
 # =======
 # Classes
 # =======
@@ -54,10 +59,5 @@ class PermissionsIdentifierCls:
     # === Method ===
     def pretty_print_perm_dict(self):
         for service in sorted(self.perm_dict):
-            header_str = f'*** Service: {service} ***'
-            print()
-            print(len(header_str) * '*')
-            print(header_str)
-            print(len(header_str) * '*')
-            for perm in sorted(self.perm_dict[service]):
-                print(f'--- {perm} ---')
+            print_table([[perm] for perm in sorted(self.perm_dict[service])], \
+                        ['Service ' + service])
