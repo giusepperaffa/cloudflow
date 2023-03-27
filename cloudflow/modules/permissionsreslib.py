@@ -33,28 +33,36 @@ class PermissionsIdentifierCls:
         entry. Both modern and old Serverless Framework syntax supported.
         """
         try:
-            try:
-                extr_perm_dict_info = self.config_dict['provider']['iam']['role']['statements']
-            except KeyError:
-                extr_perm_dict_info = self.config_dict['provider']['iamRoleStatements']
-            finally:
-                if isinstance(extr_perm_dict_info, list):
-                    for extr_perm_dict in extr_perm_dict_info:
-                        if extr_perm_dict['Effect'] == 'Allow':
-                            for perm in extr_perm_dict['Action']:
-                                self.perm_dict[perm.split(':')[0].strip()].add(perm.split(':')[1].strip())
-                        else:
-                            print("--- Inconsistency detected - 'Effect' entry not found ---")
-                elif isinstance(extr_perm_dict_info, str):
-                    self.perm_dict['undefined'].add(extr_perm_dict_info)
-                else:
-                    print('--- No information extracted - Unsupported data structure ---')
+            extr_perm_dict_info = self._get_perm_dict_info()
+            if isinstance(extr_perm_dict_info, list):
+                for extr_perm_dict in extr_perm_dict_info:
+                    if extr_perm_dict['Effect'] == 'Allow':
+                        for perm in extr_perm_dict['Action']:
+                            self.perm_dict[perm.split(':')[0].strip()].add(perm.split(':')[1].strip())
+                    else:
+                        print('--- No information extracted - No allowed permission found ---')
+            elif isinstance(extr_perm_dict_info, str):
+                self.perm_dict['undefined'].add(extr_perm_dict_info)
+            else:
+                print('--- No information extracted - Unsupported data structure ---')
         except:
             print('--- Exception raised - No information extracted ---')
 
     # === Method ===
     def get_num_of_services(self):
         return len(self.perm_dict)
+
+    # === Method ===
+    def _get_perm_dict_info(self):
+        # Init returned dictionary
+        extr_perm_dict_info = {}
+        try:
+            try:
+                extr_perm_dict_info = self.config_dict['provider']['iam']['role']['statements']
+            except KeyError:
+                extr_perm_dict_info = self.config_dict['provider']['iamRoleStatements']
+        finally:
+            return extr_perm_dict_info
 
     # === Method ===
     def pretty_print_perm_dict(self):
