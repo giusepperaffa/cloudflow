@@ -42,6 +42,8 @@ def test_one_handler_one_event(get_test_files_folder):
         he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
     assert he_identifier_obj.get_num_of_events() == 1
     assert he_identifier_obj.get_num_of_handlers() == 1
+    assert he_identifier_obj.handlers_dict['hello'] == \
+        set([('httpApi', 'get')])
 
 def test_handlers_with_and_without_events(get_test_files_folder):
     test_file = os.path.join(get_test_files_folder, 'serverless_handlers_with_and_without_events.yml')
@@ -50,6 +52,11 @@ def test_handlers_with_and_without_events(get_test_files_folder):
         he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
     assert he_identifier_obj.get_num_of_events() == 2
     assert he_identifier_obj.get_num_of_handlers() == 3
+    assert he_identifier_obj.handlers_dict['auth'] == set()
+    assert he_identifier_obj.handlers_dict['privateEndpoint'] == \
+        set([('http', 'post')])
+    assert he_identifier_obj.handlers_dict['publicEndpoint'] == \
+        set([('http', 'post')])
 
 @pytest.mark.parametrize("test_file, expected_num_of_events, expected_num_of_handlers", [\
         ('serverless_two_handlers_two_events.yml', 2, 2),
@@ -71,6 +78,9 @@ def test_multi_events_from_same_service(get_test_files_folder):
         he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
     assert he_identifier_obj.get_num_of_events() == 7
     assert he_identifier_obj.get_num_of_handlers() == 6
+    assert he_identifier_obj.handlers_dict['create'] == set([('http', 'post')])
+    assert he_identifier_obj.handlers_dict['bucket'] == \
+        set([('s3', 'ObjectCreated:*'), ('s3', 'ObjectRemoved:*')])
 
 def test_step_function_event(get_test_files_folder):
     test_file = os.path.join(get_test_files_folder, 'serverless_step_function_event.yml')
@@ -79,3 +89,27 @@ def test_step_function_event(get_test_files_folder):
         he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
     assert he_identifier_obj.get_num_of_events() == 1
     assert he_identifier_obj.get_num_of_handlers() == 3
+
+def test_one_event_via_string(get_test_files_folder):
+    test_file = os.path.join(get_test_files_folder, 'serverless_two_handlers_two_events.yml')
+    with open(test_file, mode='r') as file_obj:
+        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
+        he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
+    assert he_identifier_obj.get_num_of_handlers() == 2
+    assert he_identifier_obj.get_num_of_events() == 2
+    assert he_identifier_obj.handlers_dict['rateHandler'] == \
+        set([('schedule', 'rate(1 minute)')])
+    assert he_identifier_obj.handlers_dict['cronHandler'] == \
+        set([('schedule', 'cron(0/2 * ? * MON-FRI *)')])
+
+def test_multi_events_via_strings(get_test_files_folder):
+    test_file = os.path.join(get_test_files_folder, 'serverless_multi_events_from_same_service_via_strings.yml')
+    with open(test_file, mode='r') as file_obj:
+        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
+        he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
+    assert he_identifier_obj.get_num_of_handlers() == 2
+    assert he_identifier_obj.get_num_of_events() == 2
+    assert he_identifier_obj.handlers_dict['cloudwatchLogsSubscriber'] == \
+        set([('cloudwatchLog', '/aws/lambda/some-service-${self:provider.stage}-someFunction1'), \
+             ('cloudwatchLog', '/aws/lambda/some-service-${self:provider.stage}-someFunction2')])
+   
