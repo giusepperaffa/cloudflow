@@ -38,10 +38,7 @@ class HandlersEventsIdentifierCls:
                     # Start extraction of information about events
                     try:
                         for event_dict in extr_handlers_dict_info[handler]['events']:
-                            # NOTE: With the following statement, if a handler is
-                            # triggered by multiple events associated with certain
-                            # service, e.g., the event will be counted only once
-                            self.handlers_dict[handler].update(event_dict.keys())
+                            self.handlers_dict[handler].update(self._get_event_dict_info(event_dict))
                     except KeyError as e:
                         print(f'--- Handler {handler} - Key {e} not found ---')
                     except Exception as e:
@@ -50,12 +47,37 @@ class HandlersEventsIdentifierCls:
                         print(f'--- {e} ---')
                 else:
                     print(f'--- Information about handler {handler} is invalid ---')
-                    print('--- Check that a handler is correctly specified ---')
+                    print('--- Check that the handler is correctly specified ---')
         except KeyError as e:
             print(f'--- Exception raised - Key {e} not found ---')
         except Exception as e:
             print(f'--- Exception raised while processing handler {handler} - Details ---')
             print(f'--- {e} ---')
+
+    # === Method ===
+    def _get_event_dict_info(self, event_dict):
+        """
+        Method processing the event dictionary extracted for a specific handler.
+        It returns a list of tuples, each specifying a service and an event.
+        """
+        extr_events_info = []
+        for service, info in event_dict.items():
+            if isinstance(info, dict):
+                for flt_key in (key for key in info if key in ('method', 'event')):
+                    try:
+                        # The split string method takes an integer as input argument
+                        # that specifies the occurrence where the split has to take
+                        # place (the other occurrences are ignored). In the following
+                        # statement, the split method identifies the service-related
+                        # information, which is then removed.
+                        extr_events_info.append((service, info[flt_key].split(':', 1)[1]))
+                    except IndexError:
+                        extr_events_info.append((service, info[flt_key]))
+            elif isinstance(info, str):
+                extr_events_info.append((service, info))
+            else:
+                print('--- No information extracted - Data structure not supported ---')
+        return extr_events_info
 
     # === Method ===
     def get_num_of_events(self):
