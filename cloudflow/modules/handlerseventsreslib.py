@@ -3,7 +3,13 @@
 # ========================================
 import collections
 import yaml
+import re
 import sys
+
+# ========================================
+# Import Python Modules (Project Specific)
+# ========================================
+from cloudflow.utils.customprintreslib import print_table
 
 # =======
 # Classes
@@ -86,3 +92,9 @@ class HandlersEventsIdentifierCls:
     # === Method ===
     def get_num_of_handlers(self):
         return len(self.handlers_dict)
+
+    # === Method ===
+    def pretty_print_handlers_dict(self):
+        table_contents = [[handler, ' / '.join(re.sub(r"[\(\)']", '', str(elem).replace(', ', ' => ')) \
+            for elem in event_set)] for handler, event_set in sorted(self.handlers_dict.items())]
+        print_table(table_contents, ['Handlers', 'Events'])
