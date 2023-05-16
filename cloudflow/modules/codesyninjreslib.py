@@ -2,8 +2,10 @@
 # Import Python Modules (Standard Library)
 # ========================================
 import ast
+import astor
 import collections
 import os
+import yaml
 from typing import NamedTuple
 
 # =======
@@ -44,6 +46,60 @@ class TypeAnnotationManagerCls:
         # full paths of repository files.
         self.interf_objs_dict = {import_mode: collections.defaultdict(list) for
                                  import_mode in self.import_modes}
+
+    # === Protected Method ===
+    def _add_imported_resources(self, import_mode):
+        """
+        Method that adds the commands necessary to import
+        the required resources from the stub modules. The
+        values supported for import_mode are stored in the
+        instance variable import_modes.
+        """
+        # Process source code file
+        for sc_file in (file_full_path for file_full_path in self._get_filtered_file(import_mode)
+                        if file_full_path in self.interf_objs_dict[import_mode]):
+            # Adds type annotations within in-memory data structure
+            with open(sc_file, mode='r') as sc_file_obj:
+                tree = ast.parse(sc_file_obj.read())
+                # Processing of the list of interface objects' records
+                for interf_record in self.interf_objs_dict[import_mode][sc_file]:
+                    # Name of the module containing the relevant stubs
+                    stub_module = self.config_dict[interf_record.service]['stub_module']
+                    # Annotation to be included in the new import statement
+                    type_ann = self.config_dict[interf_record.service][interf_record.instance_type + '_obj']
+                    # Create AST node with import statement
+                    import_statement = ast.ImportFrom(module=stub_module,
+                                                      names=[ast.alias(name=type_ann, asname=None)],
+                                                      level=0)
+                    # Add the new import statement as first line of processed file
+                    tree.body.insert(0, import_statement)
+                    # Add lineno & col_offset to the created node
+                    ast.fix_missing_locations(import_statement)
+            # Overwrite source code file to include modifications
+            with open(sc_file, mode='w') as sc_file_obj:
+                sc_file_obj.write(astor.to_source(tree))
+
+    # === Protected Method ===
+    def _add_type_annotations(self, import_mode):
+        """
+        Method that adds the required type annotations to
+        the interface objects, i.e., client and resource
+        objects instantiated with the module that provides
+        an interface to the cloud services. The values
+        supported for import_mode are stored in the instance
+        variable import_modes.
+        """
+        # Process source code file
+        for sc_file in (file_full_path for file_full_path in self._get_filtered_file(import_mode)
+                        if file_full_path in self.interf_objs_dict[import_mode]):
+            # Adds type annotations within in-memory data structure
+            with open(sc_file, mode='r') as sc_file_obj:
+                tree = ast.parse(sc_file_obj.read())
+                tree = TypeAnnotationTransformerCls(self.interf_objs_dict[import_mode][sc_file],
+                                                    self._read_config_file()).visit(tree)
+            # Overwrite source code file to include annotations
+            with open(sc_file, mode='w') as sc_file_obj:
+                sc_file_obj.write(astor.to_source(tree)) 
 
     # === Protected Method ===
     def _get_file_from_repo(self, extension='.py'):
@@ -144,24 +200,13 @@ class TypeAnnotationManagerCls:
         elif import_mode == 'partial':
             return call_node.func.id in class_names
 
-    # === Protected Method ===
-    def _read_config_file(self):
-        pass
-
     # === Method ===
-    def add_all_type_annotations(self):
-        for import_mode in self.import_modes:
-            self.add_type_annotations(import_mode)
-
-    # === Method ===
-    def add_type_annotations(self, import_mode):
+    def _init_interf_objs_dict(self, import_mode):
         """
-        Method that adds the required type annotations to
-        the interface objects, i.e., client and resource
-        objects instantiated with the module that provides
-        an interface to the cloud services. The values
-        supported for import_mode are stored in the instance
-        variable import_modes.
+        Method that initializes and stores in an instance variable
+        the dictionary with information about the interface objects.
+        NOTE: This method must be called before adding the type
+        annotations to the source code.
         """
         # Process files within the repository
         for file_full_path in self._get_filtered_file(import_mode):
@@ -190,6 +235,64 @@ class TypeAnnotationManagerCls:
                             except AttributeError:
                                 continue
 
+    # === Protected Method ===
+    def _read_config_file(self,
+                          config_folder='config',
+                          config_file='type_annotation_config_file.yml'):
+        """
+        Method that maps the configuration file dedicated to type
+        annotations into a dictionary, which is stored in an instance
+        variable and returned.
+        """
+        # Full path of the folder containing the configuration file
+        config_folder_full_path = os.path.join(os.sep.join(__file__.split(os.sep)[:-2]), config_folder)
+        # The configuration file is mapped into a dictionary and returned
+        with open(os.path.join(config_folder_full_path, config_file), mode='r') as config_file_obj:
+            self.config_dict = yaml.load(config_file_obj, Loader=yaml.BaseLoader)
+        return self.config_dict
+
     # === Method ===
-    def add_imported_resources(self):
-        pass
+    def add_all_type_annotations(self):
+        """
+        Method that adds all the necessary type annotations
+        and all the import statements that these require.   
+        """
+        for import_mode in self.import_modes:
+            self._init_interf_objs_dict(import_mode)
+            self._add_type_annotations(import_mode)
+            self._add_imported_resources(import_mode)
+
+class TypeAnnotationTransformerCls(ast.NodeTransformer):
+    """
+    Class providing the functionality required to type-annotate
+    selected AST nodes. 
+    """
+    # === Constructor ===
+    def __init__(self, interf_objs_records_list, config_dict):
+        """
+        Class constructor. The input arguments are data structures
+        initialized by the class TypeAnnotationManagerCls.
+        """
+        super().__init__()
+        self.interf_objs_records_list = interf_objs_records_list
+        self.config_dict = config_dict
+
+    # === Method ===
+    def visit_Assign(self, node):
+        try:
+            # Filter relevant interface object record
+            flt_interf_record = [interf_record for interf_record in self.interf_objs_records_list
+                                 if node.value.lineno == interf_record.line_no][0]
+            # Identify relevant type annotation
+            type_ann = self.config_dict[flt_interf_record.service][flt_interf_record.instance_type + '_obj']
+            # Create annotated AST node
+            annotated_node = ast.AnnAssign(target=node.targets[0],
+                                           annotation=ast.Name(id=type_ann, ctx=ast.Load()),
+                                           value=node.value,
+                                           simple=True)
+            # Add lineno & col_offset to the node created programmatically
+            ast.copy_location(annotated_node, node)
+            ast.fix_missing_locations(annotated_node)
+            return annotated_node
+        except:
+            return node
