@@ -1,0 +1,10 @@
+s3:
+    client_obj: S3Client
+    resource_obj: S3Resource
+    stub_module: mypy_boto3_s3
+
+dynamodb:
+    client_obj: DynamodbClient
+    resource_obj: DynamoDBServiceResource
+    stub_module: mypy_boto3_dynamodb
+
