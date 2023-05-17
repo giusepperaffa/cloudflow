@@ -9,6 +9,7 @@ import os
 from cloudflow.modules.customresolverreslib import YAMLResolverCls
 from cloudflow.modules.handlerseventsreslib import HandlersEventsIdentifierCls
 from cloudflow.modules.permissionsreslib import PermissionsIdentifierCls
+from cloudflow.modules.codesyninjreslib import TypeAnnotationManagerCls
 
 # =========
 # Functions
@@ -82,10 +83,22 @@ class AnalysisManagerCls:
         perm_identifier.pretty_print_resources()
         return perm_identifier.perm_dict, perm_identifier.perm_res_dict
 
+    # === Protected Method ===
+    def _prepare_analysis(self, repo_full_path):
+        """
+        Method that implements all the steps required prior
+        to starting the actual analysis of the repository.
+        """
+        # Instantiate class that adds boto3-related type annotations
+        print('--- Boto3-specific type annotations are being added... ---')
+        type_ann_manager = TypeAnnotationManagerCls(repo_full_path)
+        type_ann_manager.add_all_type_annotations()
+        return
+
     # === Method ===
     def analyse_repo(self, repo_full_path):
         """
-        Method that implemnts the analysis pipeline designed
+        Method that implements the analysis pipeline designed
         for the CloudFlow tool. The code in this method is
         designed to analyse one repository only.
         """
@@ -99,6 +112,8 @@ class AnalysisManagerCls:
                 self.handlers_dict = self._get_handlers_dict()
                 # Extract permissions-related information
                 self.perm_dict, self.perm_res_dict = self._get_permissions_dicts()
+                # Perform steps required prior to starting analysis
+                self._prepare_analysis(repo_full_path)
                 print('--- Repository analysis only partially implemented ---')
             except Exception as e:
                 print('--- Exception raised - Details: ---')
