@@ -9,7 +9,7 @@ import os
 from cloudflow.modules.customresolverreslib import YAMLResolverCls
 from cloudflow.modules.handlerseventsreslib import HandlersEventsIdentifierCls
 from cloudflow.modules.permissionsreslib import PermissionsIdentifierCls
-from cloudflow.modules.codesyninjreslib import TypeAnnotationManagerCls
+from cloudflow.modules.typeannotationreslib import TypeAnnotationManagerCls
 
 # =========
 # Functions
