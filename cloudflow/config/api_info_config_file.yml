@@ -1,0 +1,42 @@
+s3:
+    client_obj:
+        put_object:
+            events:
+                - EventName1
+                - EventName2
+            permissions:
+                - PermissionName1
+                - PermissionName2
+        get_object:
+            events:
+                - EventName1
+                - EventName2
+            permissions:
+                - PermissionName1
+                - PermissionName2
+    resource_obj:
+        put_object:
+            events:
+                - EventName1
+                - EventName2
+            permissions:
+                - PermissionName1
+                - PermissionName2
+        get_object:
+            events:
+                - EventName1
+                - EventName2
+            permissions:
+                - PermissionName1
+                - PermissionName2
+        
+dynamodb:
+    client_obj:
+        put_item:
+            events:
+                - EventName1
+                - EventName2
+            permissions:
+                - PermissionName1
+                - PermissionName2
+    
