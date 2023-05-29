@@ -10,6 +10,7 @@ from cloudflow.modules.customresolverreslib import YAMLResolverCls
 from cloudflow.modules.handlerseventsreslib import HandlersEventsIdentifierCls
 from cloudflow.modules.permissionsreslib import PermissionsIdentifierCls
 from cloudflow.modules.typeannotationreslib import TypeAnnotationManagerCls
+from cloudflow.modules.codesyninjreslib import CodeSynInjManagerCls
 
 # =========
 # Functions
@@ -93,6 +94,12 @@ class AnalysisManagerCls:
         print('--- Boto3-specific type annotations are being added... ---')
         type_ann_manager = TypeAnnotationManagerCls(repo_full_path)
         type_ann_manager.add_all_type_annotations()
+        # Instantiate class that implements code synthesis and injection
+        print('--- Synthesized code is being injected... ---')
+        code_syn_inj_manager = CodeSynInjManagerCls(type_ann_manager.interf_objs_dict,
+                                                    self.perm_dict,
+                                                    self.handlers_dict)
+        code_syn_inj_manager.inject_synthesized_code()
         return
 
     # === Method ===
