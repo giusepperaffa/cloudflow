@@ -131,7 +131,12 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         """
         Class constructor.
         """
-        super().__init__()
+        # NOTE: Calling the base class constructor with the command
+        # super().__init__() causes initialization problems, as the
+        # constructor of the class at the top of the hierarchy is
+        # presumably called.
+        astor.TreeWalk.__init__(self)
+        # Initialization of additional attributes
         self.interf_record = interf_record
         self.perm_dict = perm_dict
         self.handlers_dict = handlers_dict
@@ -172,11 +177,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         True is returned, False otherwise.
         """
         try:
-            if api_name in self.config_dict[service][interf_obj_type + '_obj']:
-                return True
-            else:
-                print(f'--- API {api_name} not specified in the configuration file ---')
-                return False
+            return api_name in self.config_dict[service][interf_obj_type + '_obj']
         except KeyError as e:
             print(f'--- API {api_name} could not be checked in the configuration file ---')
             print(f'--- The following tag is missing in the configuration file: ---')
