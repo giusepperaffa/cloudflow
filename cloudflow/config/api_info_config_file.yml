@@ -29,6 +29,11 @@ s3:
             permissions:
                 - PermissionName1
                 - PermissionName2
+        upload_file:
+            events:
+                - ObjectCreated:*
+            permissions:
+                - PutObject
         
 dynamodb:
     client_obj:
