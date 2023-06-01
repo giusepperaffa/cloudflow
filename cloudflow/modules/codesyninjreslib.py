@@ -10,6 +10,32 @@ import yaml
 # =========
 # Functions
 # =========
+def get_api_lineno_set(ast_tree, interf_record):
+    """
+    Function that processes the passed AST tree (in-memory data
+    structure) and returns in a set the lines of code containing
+    API calls on the interface object the interf_record input
+    refers to. The function processes the entire AST tree to
+    gather the required information, and it does not rely on
+    the order AST nodes are yielded by ast.walk.
+    NOTE: The function detects API calls made either directly on
+    the interface object, e.g., s3_client.upload_file(...), where
+    s3_client is the interface object, or indirectly via an
+    intermediate object or API, e.g.:
+    s3_client.Object(...).upload_file(...)
+    """
+    # Initialize set returned by the function
+    api_lineno_set = set()
+    # Process AST tree (in-memory data structure)
+    for node in ast.walk(ast_tree):
+        if isinstance(node, ast.Call):
+            try:
+                if interf_record.instance_name == node.func.value.id:
+                    api_lineno_set.add(node.lineno)
+            except:
+                pass
+    return api_lineno_set
+
 def get_events_handlers_dict(handlers_dict):
     """
     Function that reverses the mapping implemented in the handlers
@@ -19,7 +45,7 @@ def get_events_handlers_dict(handlers_dict):
     triggered by a given event. The returned data structure has
     service event tuples as keys a sets of handlers as values.
     """
-    # initialization of the returned data structure
+    # Initialization of the returned data structure
     events_handlers_dict = collections.defaultdict(set)
     for handler, service_event_set in handlers_dict.items():
         # The tuples processed within this nested for cycle will
@@ -100,13 +126,20 @@ class CodeSynInjManagerCls:
                 # Adds synthesized code within in-memory data structure
                 with open(sc_file, mode='r') as sc_file_obj:
                     tree = ast.parse(sc_file_obj.read())
+                    # Get set of lines of code where API calls made on the
+                    # interface object interf_record refers to. Obtaining
+                    # these lines of code before modifying the source code
+                    # is necessary because the order in which AST nodes are
+                    # processed is NOT guaranteed.
+                    api_lineno_set = get_api_lineno_set(tree, interf_record)
                     # Create instance of class that modifies the source code
                     walker = CodeSynthesisInjectionCls(interf_record,
                                                        self.perm_dict,
                                                        self.handlers_dict,
                                                        self.infrastruc_code_dict,
                                                        self._read_config_file(),
-                                                       sc_file)
+                                                       sc_file,
+                                                       api_lineno_set)
                     walker.walk(tree)
                 # Overwrite source code file to include synthesized code
                 with open(sc_file, mode='w') as sc_file_obj:
@@ -127,7 +160,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                  handlers_dict,
                  infrastruc_code_dict,
                  config_dict,
-                 sc_file):
+                 sc_file,
+                 api_lineno_set):
         """
         Class constructor.
         """
@@ -143,6 +177,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         self.infrastruc_code_dict = infrastruc_code_dict
         self.config_dict = config_dict
         self.sc_file = sc_file
+        self.api_lineno_set = api_lineno_set
 
     # === Protected Method ===
     def _check_api_permissions(self,
@@ -313,8 +348,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         # or fails, the default value will remain unchanged.
         self.__api_to_process = None
         try:
-            # Check interface object instance name and if API call is supported
-            if all([self.interf_record.instance_name == self.cur_node.func.value.id,
+            # Check line of code number and if API call is supported
+            if all([self.cur_node.lineno in self.api_lineno_set,
                     self._check_api_support(self.interf_record.service,
                                             self.interf_record.instance_type,
                                             self.cur_node.func.attr)]):
@@ -327,7 +362,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                 else:
                     print('--- Permissions for API {self.cur_node.func.attr} not found - No code injected ---')
         except AttributeError:
-            # This exception is raised every time the func attibute of
+            # This exception is raised every time the func attribute of
             # the of Call object is not an Attribute object. To avoid
             # noisy log files, no message is printed in this case.
             pass 
