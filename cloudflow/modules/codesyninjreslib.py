@@ -13,25 +13,34 @@ import yaml
 def get_api_lineno_set(ast_tree, interf_record):
     """
     Function that processes the passed AST tree (in-memory data
-    structure) and returns in a set the lines of code containing
-    API calls on the interface object the interf_record input
-    refers to. The function processes the entire AST tree to
-    gather the required information, and it does not rely on
-    the order AST nodes are yielded by ast.walk.
-    NOTE: The function detects API calls made either directly on
-    the interface object, e.g., s3_client.upload_file(...), where
-    s3_client is the interface object, or indirectly via an
-    intermediate object or API, e.g.:
-    s3_client.Object(...).upload_file(...)
+    structure) and returns in a set the lines of code numbers
+    containing direct or indirect API calls on the interface
+    object the interf_record input refers to (see examples).
+    The function detects API calls made:
+    1) Directly on the interface object, e.g.:
+    s3_client.upload_file(...)
+    where s3_client is the interface object
+    2) Indirectly via an intermediate object or API, e.g.:
+    a) s3_client.Object(...).upload_file(...)
+    b) s3_obj = s3_client.Object(...); s3_obj.upload_file(...)
     """
     # Initialize set returned by the function
     api_lineno_set = set()
+    # Initialize set storing intermediate objects' instance names
+    interm_objs_set = set()
     # Process AST tree (in-memory data structure)
     for node in ast.walk(ast_tree):
         if isinstance(node, ast.Call):
             try:
-                if interf_record.instance_name == node.func.value.id:
+                if any([interf_record.instance_name == node.func.value.id,
+                        node.func.value.id in interm_objs_set]):
                     api_lineno_set.add(node.lineno)
+            except:
+                pass
+        elif isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
+            try:
+                if interf_record.instance_name == node.value.func.value.id:
+                    interm_objs_set.update(target.id for target in node.targets)
             except:
                 pass
     return api_lineno_set
@@ -126,11 +135,11 @@ class CodeSynInjManagerCls:
                 # Adds synthesized code within in-memory data structure
                 with open(sc_file, mode='r') as sc_file_obj:
                     tree = ast.parse(sc_file_obj.read())
-                    # Get set of lines of code where API calls made on the
-                    # interface object interf_record refers to. Obtaining
-                    # these lines of code before modifying the source code
-                    # is necessary because the order in which AST nodes are
-                    # processed is NOT guaranteed.
+                    # Get set of lines of code where API calls made directly
+                    # or indirectly on the interface object interf_record
+                    # refers to. Obtaining these lines of code before modifying
+                    # the source code is necessary because the order in which
+                    # AST nodes are processed is NOT guaranteed.
                     api_lineno_set = get_api_lineno_set(tree, interf_record)
                     # Create instance of class that modifies the source code
                     walker = CodeSynthesisInjectionCls(interf_record,
