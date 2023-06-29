@@ -1,0 +1,16 @@
+{
+   "Records":[
+      {
+         "eventName":"$eventName",
+         "s3":{
+            "bucket":{
+               "name":"$name",
+               "arn":"$arn"
+            },
+            "object":{
+               "key":"$key"
+            }
+         }
+      }
+   ]
+}
