@@ -2,12 +2,6 @@
 # Import Python Modules (Standard Library)
 # ========================================
 import ast
-import os
-
-# ========================================
-# Import Python Modules (Project Specific)
-# ========================================
-from cloudflow.utils.fileprocessingreslib import extract_dict_from_json
 
 # =======
 # Classes
@@ -58,7 +52,8 @@ class EventObjModelGeneratorCls:
         Method that initializes a dictionary the maps the cloud
         service to a class that generates a service-specific
         event object. NOTE: When new service-specific classes
-        are implemented, the 
+        are implemented, the dictionary initialization in this
+        method has to be updated.
         """
         self.serv_cls_dict = dict()
         self.serv_cls_dict['s3'] = S3EventObjModelGeneratorCls
@@ -72,14 +67,12 @@ class ServiceEventObjModelGeneratorCls:
     classes that generate event object models.
     """
     # === Constructor ===
-    def __init__(self, event, api_call_ast_node, ref_model_file):
+    def __init__(self, event, api_call_ast_node):
         # Attribute initialization
         self.event = event
         self.api_call_ast_node = api_call_ast_node
-        self.ref_model_file = ref_model_file
         # Processing steps needed to obtain the event object model
         self.init_model_data_dict()
-        self.upload_ref_model()
         self.process_api_call()
 
     # === Method ===
@@ -122,20 +115,6 @@ class ServiceEventObjModelGeneratorCls:
             print('--- Exception raised during API processing - Details: ---')
             print(f'--- {e} ---')
 
-    # === Method ===
-    def upload_ref_model(self, folder='event-models'):
-        """
-        Method that uploads the reference model for the
-        event object of the service. Reference models
-        provide the structure of the event objects and
-        need to be populated by processing the relevant
-        API call.
-        """
-        # Full path of the folder with reference event object files
-        ref_model_folder = os.path.join(os.sep.join(__file__.split(os.sep)[:-2]), folder)
-        # Map reference model into a dictionary
-        self.ref_model_dict = extract_dict_from_json(ref_model_folder, self.ref_model_file)
-
 class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
     """
     Class that generates S3-specific models of event objects.
@@ -143,10 +122,39 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
     # === Constructor ===
     def __init__(self,
                  event,
-                 api_call_ast_node,
-                 ref_model_file='s3_event.json'):
+                 api_call_ast_node):
         # Call base class constructor
-        super().__init__(event, api_call_ast_node, ref_model_file)
+        super().__init__(event, api_call_ast_node)
+
+    # === Method ===
+    def _get_bucket_arn(self):
+        """
+        Method used to populate the event object model.
+        It relies on an intermediate data structure.
+        """
+        if self.event_obj_model_data['bucket_arn'] is None:
+            return ast.Constant(None)
+        else:
+            return self.event_obj_model_data['bucket_arn']
+
+    # === Method ===
+    def _get_bucket_name(self):
+        """
+        Method used to populate the event object model.
+        It relies on an intermediate data structure.
+        """
+        if self.event_obj_model_data['bucket_name'] is None:
+            return ast.Constant(None)
+        else:
+            return self.event_obj_model_data['bucket_name']
+
+    # === Method ===
+    def _get_event_name(self):
+        """
+        Method used to populate the event object model.
+        It relies on an intermediate data structure.
+        """
+        return ast.Constant(self.event_obj_model_data['event_name'])
 
     # === Method ===
     def get_event_obj_model(self):
@@ -158,24 +166,29 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
         NOTE: If an exception is raised, None is returned.
         """
         try:
-            # Auxiliary variable init (improved readability)
-            model_record = self.ref_model_dict['Records'][0]
-            # Update fields of the event object reference model
-            model_record['eventName'] = self.event_obj_model_data['event_name']
-            model_record['s3']['bucket']['name'] = self.event_obj_model_data['bucket_name']
-            model_record['s3']['bucket']['arn'] = self.event_obj_model_data['bucket_arn']
-            model_record['s3']['object']['key'] = self.event_obj_model_data['object_key']
-            # Populated event object model dictionary is mapped
-            # into an AST Expression. Its attribute body includes
-            # the required ast.Dict instance.
-            ast_expression_node = ast.parse(str(self.ref_model_dict), mode='eval')
-            return ast_expression_node.body
-        except KeyError as e:
-            print('--- Exception raised while creating event object model ---')
-            print(f'--- The Key {e} is missing from one of the processed dictionaries ---')
+            ast_node = ast.Dict([ast.Constant('Records')],
+                                [ast.List([ast.Dict([ast.Constant('eventName'), ast.Constant('s3')],
+                                                    [self._get_event_name(),
+                                                     ast.Dict([ast.Constant('bucket'), ast.Constant('object')],
+                                                              [ast.Dict([ast.Constant('name'), ast.Constant('arn')],
+                                                                        [self._get_bucket_name(), self._get_bucket_arn()]),
+                                                                        ast.Dict([ast.Constant('key')],
+                                                                                 [self._get_object_key()])])])])])
+            return ast_node
         except Exception as e:
             print('--- Exception raised while creating event object model - Details: ---')
             print(f'--- {e} ---')
+
+    # === Method ===
+    def _get_object_key(self):
+        """
+        Method used to populate the event object model.
+        It relies on an intermediate data structure.
+        """
+        if self.event_obj_model_data['object_key'] is None:
+            return ast.Constant(None)
+        else:
+            return self.event_obj_model_data['object_key']
 
     # === Method ===
     def init_model_data_dict(self):
@@ -194,4 +207,36 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
 
     # === Method ===
     def process_api_put_object(self):
-        pass
+        """
+        Method to process the API put_object.
+        """
+        # The API call put_object includes only keyword arguments.
+        # Some of them are used to fill in the data structure with
+        # the event object model data.
+        for keyword in self.api_call_ast_node.keywords:
+            # Processing of keyword argument 'Bucket'
+            if keyword.arg == 'Bucket':
+                self.event_obj_model_data['bucket_name'] = keyword.value
+                self.event_obj_model_data['bucket_arn'] = keyword.value
+            # Processing of keyword argument 'Key'
+            elif keyword.arg == 'Key':
+                self.event_obj_model_data['object_key'] = keyword.value
+
+    # === Method ===
+    def process_api_upload_file(self):
+        """
+        Method to process the API upload_file.
+        """
+        # The API call upload_file includes both positional and
+        # keyword arguments. The information required to fill in
+        # the data structure with the event object model data is
+        # extracted from specific positional arguments only. The
+        # following dictionary identifies the position of input
+        # argument of interest.
+        pos_args_dict = {'Bucket': 1, 'Key': 2}
+        for index, arg in enumerate(self.api_call_ast_node.args):
+            if index == pos_args_dict['Bucket']:
+                self.event_obj_model_data['bucket_name'] = arg
+                self.event_obj_model_data['bucket_arn'] = arg
+            elif index == pos_args_dict['Key']:
+                self.event_obj_model_data['object_key'] = arg
