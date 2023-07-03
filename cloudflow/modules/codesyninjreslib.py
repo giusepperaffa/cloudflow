@@ -5,7 +5,11 @@ import ast
 import astor
 import collections
 import os
-import yaml
+
+# ========================================
+# Import Python Modules (Project Specific)
+# ========================================
+from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 
 # =========
 # Functions
@@ -118,8 +122,7 @@ class CodeSynInjManagerCls:
         # Full path of the folder containing the configuration file
         config_folder_full_path = os.path.join(os.sep.join(__file__.split(os.sep)[:-2]), config_folder)
         # The configuration file is mapped into a dictionary and returned
-        with open(os.path.join(config_folder_full_path, config_file), mode='r') as config_file_obj:
-            self.config_dict = yaml.load(config_file_obj, Loader=yaml.BaseLoader)
+        self.config_dict = extract_dict_from_yaml(config_folder_full_path, config_file)
         return self.config_dict
 
     # === Method ===
