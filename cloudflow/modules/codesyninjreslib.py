@@ -14,10 +14,10 @@ from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 # =========
 # Functions
 # =========
-def get_api_lineno_set(ast_tree, interf_record):
+def get_api_call_ast_nodes(ast_tree, interf_record):
     """
     Function that processes the passed AST tree (in-memory data
-    structure) and returns in a set the lines of code numbers
+    structure) and returns in a set the ast.Call nodes
     containing direct or indirect API calls on the interface
     object the interf_record input refers to (see examples).
     The function detects API calls made:
@@ -29,7 +29,7 @@ def get_api_lineno_set(ast_tree, interf_record):
     b) s3_obj = s3_client.Object(...); s3_obj.upload_file(...)
     """
     # Initialize set returned by the function
-    api_lineno_set = set()
+    api_call_ast_nodes = set()
     # Initialize set storing intermediate objects' instance names
     interm_objs_set = set()
     # Process AST tree (in-memory data structure)
@@ -38,7 +38,7 @@ def get_api_lineno_set(ast_tree, interf_record):
             try:
                 if any([interf_record.instance_name == node.func.value.id,
                         node.func.value.id in interm_objs_set]):
-                    api_lineno_set.add(node.lineno)
+                    api_call_ast_nodes.add(node)
             except:
                 pass
         elif isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
@@ -47,7 +47,7 @@ def get_api_lineno_set(ast_tree, interf_record):
                     interm_objs_set.update(target.id for target in node.targets)
             except:
                 pass
-    return api_lineno_set
+    return api_call_ast_nodes
 
 def get_events_handlers_dict(handlers_dict):
     """
@@ -138,12 +138,12 @@ class CodeSynInjManagerCls:
                 # Adds synthesized code within in-memory data structure
                 with open(sc_file, mode='r') as sc_file_obj:
                     tree = ast.parse(sc_file_obj.read())
-                    # Get set of lines of code where API calls made directly
+                    # Get set of AST nodes with API calls made directly
                     # or indirectly on the interface object interf_record
-                    # refers to. Obtaining these lines of code before modifying
+                    # refers to. Obtaining this information before modifying
                     # the source code is necessary because the order in which
                     # AST nodes are processed is NOT guaranteed.
-                    api_lineno_set = get_api_lineno_set(tree, interf_record)
+                    api_call_ast_nodes = get_api_call_ast_nodes(tree, interf_record)
                     # Create instance of class that modifies the source code
                     walker = CodeSynthesisInjectionCls(interf_record,
                                                        self.perm_dict,
@@ -151,7 +151,7 @@ class CodeSynInjManagerCls:
                                                        self.infrastruc_code_dict,
                                                        self._read_config_file(),
                                                        sc_file,
-                                                       api_lineno_set)
+                                                       api_call_ast_nodes)
                     walker.walk(tree)
                 # Overwrite source code file to include synthesized code
                 with open(sc_file, mode='w') as sc_file_obj:
@@ -173,7 +173,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                  infrastruc_code_dict,
                  config_dict,
                  sc_file,
-                 api_lineno_set):
+                 api_call_ast_nodes):
         """
         Class constructor.
         """
@@ -189,7 +189,9 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         self.infrastruc_code_dict = infrastruc_code_dict
         self.config_dict = config_dict
         self.sc_file = sc_file
-        self.api_lineno_set = api_lineno_set
+        self.api_call_ast_nodes = api_call_ast_nodes
+        # Execution of initialization methods
+        self._init_api_lineno_set()
 
     # === Protected Method ===
     def _check_api_permissions(self,
@@ -278,6 +280,16 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                     yield event_obj_init_stmt, syn_handler_call
             except:
                 yield None, None
+
+    # === Protected Method ===
+    def _init_api_lineno_set(self):
+        """
+        Method that extracts and returns in a set the line
+        of code numbers where the API calls are.
+        """
+        self.api_lineno_set = {api_call_ast_node.lineno for api_call_ast_node in
+                               self.api_call_ast_nodes}
+        return
 
     # === Protected Method ===
     def _syn_event_obj_init_stmt(self, service, event):
