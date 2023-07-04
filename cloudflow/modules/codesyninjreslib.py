@@ -10,6 +10,7 @@ import os
 # Import Python Modules (Project Specific)
 # ========================================
 from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
+from cloudflow.modules.eventobjmodelgenreslib import EventObjModelGeneratorCls
 
 # =========
 # Functions
@@ -251,7 +252,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
             return handler_qual_name
 
     # === Protected Method ===
-    def _get_syn_code(self, service, interf_obj_type, api_name):
+    def _get_syn_code(self, service, interf_obj_type, api_call_ast_node):
         """
         Method that implements a generator that yields a tuple with
         the following elements:
@@ -262,6 +263,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         NOTE: When an exception is raised, this generator yields the
         tuple (None, None).
         """
+        # Retrieve API name from AST node
+        api_name = api_call_ast_node.func.attr
         # To facilitate the retrieval of the handlers triggered by a
         # a given event, the handlers dictionary stored in one of the
         # instance variables is first processed with a function.
@@ -274,7 +277,9 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                 for handler in events_handlers_dict[(service, event)]:
                     handler_qual_name = self._get_handler_qual_name(handler)
                     # Synthetize event object initialization
-                    event_obj_init_stmt = self._syn_event_obj_init_stmt(service, event)
+                    event_obj_init_stmt = self._syn_event_obj_init_stmt(service,
+                                                                        event,
+                                                                        api_call_ast_node)
                     # Synthetize handler call
                     syn_handler_call = self._syn_handler_call(handler_qual_name)
                     yield event_obj_init_stmt, syn_handler_call
@@ -292,15 +297,17 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         return
 
     # === Protected Method ===
-    def _syn_event_obj_init_stmt(self, service, event):
+    def _syn_event_obj_init_stmt(self, service, event, api_call_ast_node):
         """
         Method that synthesizes and returns the AST node containing
         the event object initialization.
         """
-        print('--- Synthesis of the event object initialization is incomplete ---')
+        print('--- Synthesis of the event object is about to start... ---')
+        event_obj_model_gen = EventObjModelGeneratorCls(service,
+                                                        event,
+                                                        api_call_ast_node)
         ast_node = ast.Assign(targets=[ast.Name(id="event", ctx=ast.Store())],
-                              value=ast.Dict([ast.Name('Test', ast.Load())],
-                                             [ast.Name('Test', ast.Load())]))
+                              value=event_obj_model_gen.get_event_obj_model())
         return ast_node
 
     # === Protected Method ===
@@ -382,7 +389,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                 if self._check_api_permissions(self.interf_record.service,
                                                self.interf_record.instance_type,
                                                self.cur_node.func.attr):
-                    self.__api_to_process = self.cur_node.func.attr
+                    # Store AST node with API call
+                    self.__api_to_process = self.cur_node
                 else:
                     print('--- Permissions for API {self.cur_node.func.attr} not found - No code injected ---')
         except AttributeError:
