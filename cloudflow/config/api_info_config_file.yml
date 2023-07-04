@@ -2,11 +2,9 @@ s3:
     client_obj:
         put_object:
             events:
-                - EventName1
-                - EventName2
+                - ObjectCreated:*
             permissions:
-                - PermissionName1
-                - PermissionName2
+                - PutObject
         get_object:
             events:
                 - EventName1
@@ -14,14 +12,17 @@ s3:
             permissions:
                 - PermissionName1
                 - PermissionName2
+        upload_file:
+            events:
+                - ObjectCreated:*
+            permissions:
+                - PutObject
     resource_obj:
         put_object:
             events:
-                - EventName1
-                - EventName2
+                - ObjectCreated:*
             permissions:
-                - PermissionName1
-                - PermissionName2
+                - PutObject
         get_object:
             events:
                 - EventName1
