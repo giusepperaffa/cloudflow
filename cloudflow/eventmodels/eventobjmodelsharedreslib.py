@@ -38,12 +38,52 @@ class ServiceEventObjModelGeneratorCls:
         raise NotImplementedError('Method init_model_data_dict not implemented')
 
     # === Method ===
+    def process_all_interm_interf_records(self):
+        """
+        Method that triggers the processing of intermediate objects
+        (boto3 sub-resources) by automatically identifying intermediate
+        object-specific methods in the class. If an intermediate object
+        is not supported (i.e., no dedicated method is included in the
+        class) an exception is raised.
+        """
+        # Auxiliary dictionary to store all the intermediate object
+        # interface records organized by origin.
+        interm_interf_record_dict = dict()
+        # Identify intermediate object interface record (same line of code)
+        try:
+            interm_interf_record_dict['line_no'] = [record.ast_node for record in self.interm_interf_record_set
+                                                    if record.line_no == self.api_call_ast_node.lineno]
+        except:
+            print('--- No intermediate interface records retrieved from same line of code ---')
+        # Identify intermediate object interface record (intermediate initialization)
+        try:
+            interm_interf_record_dict['instance_name'] = [record.ast_node for record in self.interm_interf_record_set
+                                                          if record.instance_name == self.api_call_ast_node.func.value.id]
+        except:
+            print('--- No intermediate interface records retrieved through instance name ---')
+        # Process all gathered intermediate interface records
+        for origin, interm_interf_record_list in interm_interf_record_dict.items():
+            if interm_interf_record_list:
+                self.interm_interf_record = interm_interf_record_list[0]
+                # Check if the intermediate interface record refers to a relevant intermediate object
+                if self.interm_interf_record.func.attr in self.interm_obj_config_dict:
+                    try:
+                        print(f"--- Intermediate object being processed (from {origin.replace('_', ' ')})... ---")
+                        print(f'--- Intermediate object type: {self.interm_interf_record.func.attr} ---')
+                        # NOTE: The following statement relies on a naming convention that
+                        # must be adopted by the intermediate object-specific methods
+                        getattr(self, 'process_interm_' + self.interm_interf_record.func.attr.lower())()
+                    except Exception as e:
+                        print('--- Exception raised during intermediate object processing - Details: ---')
+                        print(f'--- {e} ---')
+
+    # === Method ===
     def process_api_call(self):
         """
         Method that triggers the processing of the API call
         by automatically identifying API-specific methods
         in the class. If an API call is not supported (i.e.,
-        no dediicated method is included in the class) an
+        no dedicated method is included in the class) an
         exception is raised.
         """
         try:
