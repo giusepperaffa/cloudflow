@@ -18,9 +18,10 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
     # === Constructor ===
     def __init__(self,
                  event,
-                 api_call_ast_node):
+                 api_call_ast_node,
+                 interm_interf_record_set):
         # Call base class constructor
-        super().__init__(event, api_call_ast_node)
+        super().__init__(event, api_call_ast_node, interm_interf_record_set)
 
     # === Method ===
     def _get_bucket_arn(self):
@@ -102,21 +103,56 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
         self.event_obj_model_data['object_key'] = None
 
     # === Method ===
+    def process_all_interm_interf_records(self):
+        """
+        Method to process the API put_object.
+        """
+        # NOTE: REFERENCE DICT FROM NEW CONFIG FILE
+        interm_obj_config_dict = {'Bucket': {'name': 0}}
+        # Auxiliary dictionary to store all the intermediate object
+        # interface records organized by origin.
+        interm_interf_record_dict = dict()
+        # Identify intermediate object interface record (same line of code)
+        try:
+            interm_interf_record_dict['line_no'] = [record.ast_node for record in self.interm_interf_record_set
+                                                    if record.line_no == self.api_call_ast_node.lineno]
+        except:
+            print('--- No intermediate interface records retrieved from same line of code ---')
+        # Identify intermediate object interface record (intermediate initialization)
+        try:
+            interm_interf_record_dict['instance_name'] = [record.ast_node for record in self.interm_interf_record_set
+                                                          if record.instance_name == self.api_call_ast_node.func.value.id]
+        except:
+            print('--- No intermediate interface records retrieved through instance name ---')
+        # Process all gathered intermediate interface records
+        for origin, interm_interf_record_list in interm_interf_record_dict.items():
+            if interm_interf_record_list:
+                self.interm_interf_record = interm_interf_record_list[0]
+                # Check if the intermediate interface record refers to a relevant intermediate object
+                if self.interm_interf_record.func.attr in interm_obj_config_dict:
+                    print(f"--- Intermediate object being processed (from {origin.replace('_', ' ')})... ---")
+                    print(f'--- Intermediate object type: {self.interm_interf_record.func.attr} ---')
+                    getattr(self, 'process_interm_' + self.interm_interf_record.func.attr.lower())()
+
+    # === Method ===
     def process_api_put_object(self):
         """
         Method to process the API put_object.
         """
+        # Start by processing the intermediate interface records
+        # to extract information relevant to this API.
+        self.process_all_interm_interf_records()
         # The API call put_object includes only keyword arguments.
         # Some of them are used to fill in the data structure with
         # the event object model data.
         for keyword in self.api_call_ast_node.keywords:
             # Processing of keyword argument 'Bucket'
             if keyword.arg == 'Bucket':
-                self.event_obj_model_data['bucket_name'] = keyword.value
-                self.event_obj_model_data['bucket_arn'] = keyword.value
+                self.set_bucket_name(keyword.value)
+                self.set_bucket_arn(keyword.value)
             # Processing of keyword argument 'Key'
             elif keyword.arg == 'Key':
-                self.event_obj_model_data['object_key'] = keyword.value
+                self.set_object_key(keyword.value)
 
     # === Method ===
     def process_api_upload_file(self):
@@ -136,3 +172,40 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
                 self.event_obj_model_data['bucket_arn'] = arg
             elif index == pos_args_dict['Key']:
                 self.event_obj_model_data['object_key'] = arg
+
+    # === Method ===
+    def process_interm_bucket(self):
+        """
+        Method to process intermediate object of type Bucket.
+        """
+        # NOTE: CONSIDER DEFINING AUXILIARY VARIABLES WITH
+        # KEY NAME AND INDEX VALUE USED FURTHER DOWN
+        # Process keyword arguments
+        try:
+            extracted_value = [keyword.value for keyword in
+                               self.interm_interf_record.keywords if keyword.arg=='name'][0]
+            self.set_bucket_name(extracted_value)
+            self.set_bucket_arn(extracted_value)
+        except:
+            print('--- No value extracted from keyword arguments ---')
+        # Process positional arguments
+        try:
+            self.set_bucket_name(self.interm_interf_record.args[0])
+            self.set_bucket_arn(self.interm_interf_record.args[0])
+        except:
+            print('--- No value extracted from positional arguments ---')
+
+    # === Method ===
+    def set_bucket_name(self, value):
+        if self.event_obj_model_data['bucket_name'] is None:
+            self.event_obj_model_data['bucket_name'] = value
+
+    # === Method ===
+    def set_bucket_arn(self, value):
+        if self.event_obj_model_data['bucket_arn'] is None:
+            self.event_obj_model_data['bucket_arn'] = value
+
+    # === Method ===
+    def set_object_key(self, value):
+        if self.event_obj_model_data['object_key'] is None:
+            self.event_obj_model_data['object_key'] = value
