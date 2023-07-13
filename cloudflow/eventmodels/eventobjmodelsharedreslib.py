@@ -7,11 +7,16 @@ class ServiceEventObjModelGeneratorCls:
     classes that generate event object models.
     """
     # === Constructor ===
-    def __init__(self, event, api_call_ast_node, interm_interf_record_set):
+    def __init__(self,
+                 event,
+                 api_call_ast_node,
+                 interm_interf_record_set,
+                 interm_obj_config_dict):
         # Attribute initialization
         self.event = event
         self.api_call_ast_node = api_call_ast_node
         self.interm_interf_record_set = interm_interf_record_set
+        self.interm_obj_config_dict = interm_obj_config_dict
         # Processing steps needed to obtain the event object model
         self.init_model_data_dict()
         self.process_api_call()

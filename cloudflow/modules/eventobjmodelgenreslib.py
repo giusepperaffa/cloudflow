@@ -2,11 +2,13 @@
 # Import Python Modules (Standard Library)
 # ========================================
 import ast
+import os
 
 # ========================================
 # Import Python Modules (Project Specific)
 # ========================================
 from cloudflow.eventmodels.s3eventobjmodelreslib import S3EventObjModelGeneratorCls
+from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 
 # =======
 # Classes
@@ -26,6 +28,7 @@ class EventObjModelGeneratorCls:
         self.interm_interf_record_set = interm_interf_record_set
         # Additional initialization steps
         self.init_serv_cls_dict()
+        self.init_interm_obj_config_dict()
         self.create_serv_model_gen()
 
     # === Method ===
@@ -38,7 +41,8 @@ class EventObjModelGeneratorCls:
         try:
             self.serv_model_gen = self.serv_cls_dict[self.service](self.event,
                                                                    self.api_call_ast_node,
-                                                                   self.interm_interf_record_set)
+                                                                   self.interm_interf_record_set,
+                                                                   self.interm_obj_config_dict)
         except KeyError as e:
             print(f'--- The service {e} is not supported ---')
     
@@ -52,6 +56,22 @@ class EventObjModelGeneratorCls:
         except Exception as e:
             print('--- Exception raised while creating event object model - Details: ---')
             print(f'--- {e} ---')
+
+    # === Method ===
+    def init_interm_obj_config_dict(self,
+                                    config_folder='config',
+                                    config_file='interm_obj_config_file.yml'):
+        """
+        Method that maps the configuration file dedicated to the
+        intermediate objects (i.e., the boto3 sub-resources) into
+        a dictionary, which is stored in an instance variable.
+        """
+        # Full path of the folder containing the configuration file
+        config_folder_full_path = os.path.join(os.sep.join(__file__.split(os.sep)[:-2]), config_folder)
+        # The service-specific part of the configuration file is
+        # mapped into a dictionary and stored in an instance variable
+        self.interm_obj_config_dict = extract_dict_from_yaml(config_folder_full_path,
+                                                             config_file)[self.service]
 
     # === Method ===
     def init_serv_cls_dict(self):

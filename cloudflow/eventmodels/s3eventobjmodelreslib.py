@@ -19,9 +19,13 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
     def __init__(self,
                  event,
                  api_call_ast_node,
-                 interm_interf_record_set):
+                 interm_interf_record_set,
+                 interm_obj_config_dict):
         # Call base class constructor
-        super().__init__(event, api_call_ast_node, interm_interf_record_set)
+        super().__init__(event,
+                         api_call_ast_node,
+                         interm_interf_record_set,
+                         interm_obj_config_dict)
 
     # === Method ===
     def _get_bucket_arn(self):
@@ -107,8 +111,6 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
         """
         Method to process the API put_object.
         """
-        # NOTE: REFERENCE DICT FROM NEW CONFIG FILE
-        interm_obj_config_dict = {'Bucket': {'name': 0}}
         # Auxiliary dictionary to store all the intermediate object
         # interface records organized by origin.
         interm_interf_record_dict = dict()
@@ -129,7 +131,7 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
             if interm_interf_record_list:
                 self.interm_interf_record = interm_interf_record_list[0]
                 # Check if the intermediate interface record refers to a relevant intermediate object
-                if self.interm_interf_record.func.attr in interm_obj_config_dict:
+                if self.interm_interf_record.func.attr in self.interm_obj_config_dict:
                     print(f"--- Intermediate object being processed (from {origin.replace('_', ' ')})... ---")
                     print(f'--- Intermediate object type: {self.interm_interf_record.func.attr} ---')
                     getattr(self, 'process_interm_' + self.interm_interf_record.func.attr.lower())()
