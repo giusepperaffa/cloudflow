@@ -16,13 +16,14 @@ class EventObjModelGeneratorCls:
     Class that generates models of event objects.
     """
     # === Constructor ===
-    def __init__(self, service, event, api_call_ast_node):
+    def __init__(self, service, event, api_call_ast_node, interm_interf_record_set):
         assert isinstance(api_call_ast_node, ast.Call), \
             f'--- Instance of class {self.__class__.__name__} cannot be created ---'
         # Attribute initialization
         self.service = service
         self.event = event 
         self.api_call_ast_node = api_call_ast_node
+        self.interm_interf_record_set = interm_interf_record_set
         # Additional initialization steps
         self.init_serv_cls_dict()
         self.create_serv_model_gen()
@@ -36,7 +37,8 @@ class EventObjModelGeneratorCls:
         """
         try:
             self.serv_model_gen = self.serv_cls_dict[self.service](self.event,
-                                                                   self.api_call_ast_node)
+                                                                   self.api_call_ast_node,
+                                                                   self.interm_interf_record_set)
         except KeyError as e:
             print(f'--- The service {e} is not supported ---')
     

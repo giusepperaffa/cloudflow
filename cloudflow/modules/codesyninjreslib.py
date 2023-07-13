@@ -5,6 +5,7 @@ import ast
 import astor
 import collections
 import os
+from typing import Optional, NamedTuple
 
 # ========================================
 # Import Python Modules (Project Specific)
@@ -21,6 +22,8 @@ def get_api_call_ast_nodes(ast_tree, interf_record):
     structure) and returns in a set the ast.Call nodes
     containing direct or indirect API calls on the interface
     object the interf_record input refers to (see examples).
+    A set of intermediate interface objects' records is also
+    returned.
     The function detects API calls made:
     1) Directly on the interface object, e.g.:
     s3_client.upload_file(...)
@@ -33,22 +36,37 @@ def get_api_call_ast_nodes(ast_tree, interf_record):
     api_call_ast_nodes = set()
     # Initialize set storing intermediate objects' instance names
     interm_objs_set = set()
+    # Initialize set storing intermediate objects' interface records
+    interm_interf_record_set = set()
     # Process AST tree (in-memory data structure)
     for node in ast.walk(ast_tree):
         if isinstance(node, ast.Call):
             try:
-                if any([interf_record.instance_name == node.func.value.id,
-                        node.func.value.id in interm_objs_set]):
+                if node.func.value.id in interm_objs_set:
                     api_call_ast_nodes.add(node)
+                elif interf_record.instance_name == node.func.value.id:
+                    api_call_ast_nodes.add(node)
+                    # Store record of intermediate object interface
+                    interm_interf_record_set.add(IntermInterfaceRecordCls(
+                        line_no=node.lineno,
+                        instance_name=None,
+                        ast_node=node
+                    ))
             except:
                 pass
         elif isinstance(node, ast.Assign) and isinstance(node.value, ast.Call):
             try:
                 if interf_record.instance_name == node.value.func.value.id:
                     interm_objs_set.update(target.id for target in node.targets)
+                    # Store record of intermediate object interface
+                    interm_interf_record_set.add(IntermInterfaceRecordCls(
+                        line_no=node.value.lineno,
+                        instance_name=node.targets[0].id,
+                        ast_node=node.value
+                    ))
             except:
                 pass
-    return api_call_ast_nodes
+    return api_call_ast_nodes, interm_interf_record_set
 
 def get_events_handlers_dict(handlers_dict):
     """
@@ -144,7 +162,8 @@ class CodeSynInjManagerCls:
                     # refers to. Obtaining this information before modifying
                     # the source code is necessary because the order in which
                     # AST nodes are processed is NOT guaranteed.
-                    api_call_ast_nodes = get_api_call_ast_nodes(tree, interf_record)
+                    api_call_ast_nodes, interm_interf_record_set = get_api_call_ast_nodes(tree,
+                                                                                          interf_record)
                     # Create instance of class that modifies the source code
                     walker = CodeSynthesisInjectionCls(interf_record,
                                                        self.perm_dict,
@@ -152,7 +171,8 @@ class CodeSynInjManagerCls:
                                                        self.infrastruc_code_dict,
                                                        self._read_config_file(),
                                                        sc_file,
-                                                       api_call_ast_nodes)
+                                                       api_call_ast_nodes,
+                                                       interm_interf_record_set)
                     walker.walk(tree)
                 # Overwrite source code file to include synthesized code
                 with open(sc_file, mode='w') as sc_file_obj:
@@ -174,7 +194,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                  infrastruc_code_dict,
                  config_dict,
                  sc_file,
-                 api_call_ast_nodes):
+                 api_call_ast_nodes,
+                 interm_interf_record_set):
         """
         Class constructor.
         """
@@ -191,6 +212,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         self.config_dict = config_dict
         self.sc_file = sc_file
         self.api_call_ast_nodes = api_call_ast_nodes
+        self.interm_interf_record_set = interm_interf_record_set
         # Execution of initialization methods
         self._init_api_lineno_set()
 
@@ -252,7 +274,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
             return handler_qual_name
 
     # === Protected Method ===
-    def _get_syn_code(self, service, interf_obj_type, api_call_ast_node):
+    def _get_syn_code(self, service, interf_obj_type, api_call_ast_node, interm_interf_record_set):
         """
         Method that implements a generator that yields a tuple with
         the following elements:
@@ -279,7 +301,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                     # Synthetize event object initialization
                     event_obj_init_stmt = self._syn_event_obj_init_stmt(service,
                                                                         event,
-                                                                        api_call_ast_node)
+                                                                        api_call_ast_node,
+                                                                        interm_interf_record_set)
                     # Synthetize handler call
                     syn_handler_call = self._syn_handler_call(handler_qual_name)
                     yield event_obj_init_stmt, syn_handler_call
@@ -297,7 +320,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         return
 
     # === Protected Method ===
-    def _syn_event_obj_init_stmt(self, service, event, api_call_ast_node):
+    def _syn_event_obj_init_stmt(self, service, event, api_call_ast_node, interm_interf_record_set):
         """
         Method that synthesizes and returns the AST node containing
         the event object initialization.
@@ -305,7 +328,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         print('--- Synthesis of the event object is about to start... ---')
         event_obj_model_gen = EventObjModelGeneratorCls(service,
                                                         event,
-                                                        api_call_ast_node)
+                                                        api_call_ast_node,
+                                                        interm_interf_record_set)
         ast_node = ast.Assign(targets=[ast.Name(id="event", ctx=ast.Store())],
                               value=event_obj_model_gen.get_event_obj_model())
         return ast_node
@@ -349,7 +373,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
             if self.__api_to_process is not None:
                 for event_obj_init_stmt, syn_handler_call in self._get_syn_code(self.interf_record.service,
                                                                                 self.interf_record.instance_type,
-                                                                                self.__api_to_process):
+                                                                                self.__api_to_process,
+                                                                                self.interm_interf_record_set):
                     if all([event_obj_init_stmt is not None, syn_handler_call is not None]):
                         # Inject synthesized code with initialization of event object
                         body.insert(i + counter, event_obj_init_stmt)
@@ -402,3 +427,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
             print('--- Exception raised during code synthesis and injection - Details: ---')
             print(f'--- {e} ---')
         return True
+
+class IntermInterfaceRecordCls(NamedTuple):
+    line_no: int
+    instance_name: Optional[str]
+    ast_node: ast.Call
