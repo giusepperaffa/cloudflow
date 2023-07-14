@@ -2,8 +2,6 @@
 # Import Python Modules (Standard Library)
 # ========================================
 import collections
-import yaml
-import sys
 
 # ========================================
 # Import Python Modules (Project Specific)
