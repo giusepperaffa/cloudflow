@@ -1,8 +1,14 @@
 # ========================================
 # Import Python Modules (Standard Library)
 # ========================================
+import os
 import re
 import yaml
+
+# ========================================
+# Import Python Modules (Project Specific)
+# ========================================
+from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 
 # =======
 # Classes
@@ -32,8 +38,8 @@ class YAMLResolverCls:
         """
         Method that maps the unresolved YAML file onto a reference dictionary.
         """
-        with open(self.yaml_file, mode='r') as file_obj:
-            self.ref_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
+        self.ref_dict = extract_dict_from_yaml(os.path.dirname(self.yaml_file),
+                                               os.path.basename(self.yaml_file))
 
     # === Method ===
     def _process_value(self, value):
