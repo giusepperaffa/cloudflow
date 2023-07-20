@@ -11,6 +11,7 @@ from cloudflow.modules.handlerseventsreslib import HandlersEventsIdentifierCls
 from cloudflow.modules.permissionsreslib import PermissionsIdentifierCls
 from cloudflow.modules.typeannotationreslib import TypeAnnotationManagerCls
 from cloudflow.modules.codesyninjreslib import CodeSynInjManagerCls
+from cloudflow.modules.foldersmanagementreslib import FoldersManagerCls
 
 # =========
 # Functions
@@ -90,9 +91,13 @@ class AnalysisManagerCls:
         Method that implements all the steps required prior
         to starting the actual analysis of the repository.
         """
+        # Instantiate class that handles the folder structure used by the tool
+        print('--- Folder structure being created... ---')
+        folders_manager = FoldersManagerCls(repo_full_path)
+        folders_manager.create_folders_structure()
         # Instantiate class that adds boto3-related type annotations
         print('--- Boto3-specific type annotations are being added... ---')
-        type_ann_manager = TypeAnnotationManagerCls(repo_full_path)
+        type_ann_manager = TypeAnnotationManagerCls(folders_manager.repo_full_path)
         type_ann_manager.add_all_type_annotations()
         # Instantiate class that implements code synthesis and injection
         print('--- Synthesized code is being injected... ---')
