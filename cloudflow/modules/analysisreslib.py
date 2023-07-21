@@ -12,6 +12,7 @@ from cloudflow.modules.permissionsreslib import PermissionsIdentifierCls
 from cloudflow.modules.typeannotationreslib import TypeAnnotationManagerCls
 from cloudflow.modules.codesyninjreslib import CodeSynInjManagerCls
 from cloudflow.modules.foldersmanagementreslib import FoldersManagerCls
+from cloudflow.modules.modelgenerationreslib import ModelGenerationManagerCls
 
 # =========
 # Functions
@@ -91,13 +92,16 @@ class AnalysisManagerCls:
         Method that implements all the steps required prior
         to starting the actual analysis of the repository.
         """
-        # Instantiate class that handles the folder structure used by the tool
-        print('--- Folder structure being created... ---')
-        folders_manager = FoldersManagerCls(repo_full_path)
-        folders_manager.create_folders_structure()
+        # Instantiate class that generates Pysa models
+        print('--- Pysa models are about to be generated... ---')
+        model_gen_manager = ModelGenerationManagerCls(self.handlers_dict,
+                                                      self.infrastruc_code_dict,
+                                                      self.infrastruc_code_file,
+                                                      self.folders_manager.pysa_models_folder)
+        model_gen_manager.generate_models()
         # Instantiate class that adds boto3-related type annotations
         print('--- Boto3-specific type annotations are being added... ---')
-        type_ann_manager = TypeAnnotationManagerCls(folders_manager.repo_full_path)
+        type_ann_manager = TypeAnnotationManagerCls(repo_full_path)
         type_ann_manager.add_all_type_annotations()
         # Instantiate class that implements code synthesis and injection
         print('--- Synthesized code is being injected... ---')
@@ -115,8 +119,12 @@ class AnalysisManagerCls:
         for the CloudFlow tool. The code in this method is
         designed to analyse one repository only.
         """
+        # Instantiate class that handles the folder structure used by the tool
+        print('--- Folder structure is being created... ---')
+        self.folders_manager = FoldersManagerCls(repo_full_path)
+        self.folders_manager.create_folders_structure()
         # Infrastructure code identification
-        self.infrastruc_code_file = find_infrastruc_code_file(repo_full_path)
+        self.infrastruc_code_file = find_infrastruc_code_file(self.folders_manager.repo_full_path)
         if self.infrastruc_code_file:
             try:
                 # Map infrastructure code file into a dictionary
@@ -126,7 +134,7 @@ class AnalysisManagerCls:
                 # Extract permissions-related information
                 self.perm_dict, self.perm_res_dict = self._get_permissions_dicts()
                 # Perform steps required prior to starting analysis
-                self._prepare_analysis(repo_full_path)
+                self._prepare_analysis(self.folders_manager.repo_full_path)
                 print('--- Repository analysis only partially implemented ---')
             except Exception as e:
                 print('--- Exception raised - Details: ---')

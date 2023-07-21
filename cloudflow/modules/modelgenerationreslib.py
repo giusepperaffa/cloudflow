@@ -2,6 +2,7 @@
 # Import Python Modules (Standard Library)
 # ========================================
 import ast
+import collections
 import os
 import re
 
@@ -94,7 +95,7 @@ class HandlerModelGeneratorBaseCls:
         # Consistency check
         if self.ss_type_list == []:
             raise NotImplementedError('--- Inconsistency detected - Missing initialization ---')
-        print(f'--- Model generation with {self.__class__.__name__} - Start ---')
+        print(f'--- Pysa model is being generated with class {self.__class__.__name__}... ---')
         with open(self.model_file_fp, mode=self._get_file_mode()) as m_file,\
             open(self.source_code, mode='r') as sc_file:
             # Add comment to model file (readability)
@@ -128,3 +129,102 @@ class HandlerSinkModelGeneratorCls(HandlerModelGeneratorBaseCls):
         super().__init__(*args, **kwargs)
         # Completion of the initialization provided in the base class
         self.ss_type_list = sink_types
+
+class ModelGenerationManagerCls:
+    """
+    Class that provides an interface to the classes that
+    generate Pysa models. Data structures initialized by
+    the module analysisreslib are used to instantiate an
+    object of this class.
+    """
+    # === Constructor ===
+    def __init__(self,
+                 handlers_dict,
+                 infrastruc_code_dict,
+                 infrastruc_code_file,
+                 model_folder):
+        """
+        Class constructor. Input arguments:
+        -) handlers_dict: Data structure initialized within
+        the module analysisreslib.
+        -) infrastruc_code_dict: Data structure initialized
+        within the module analysisreslib.
+        -) infrastruc_code_file: Full path of the YAML file.
+        -) model_folder: String containing the full path of
+        the folder where the Pysa models have to be stored.
+        """
+        # Attribute initialization
+        self.handlers_dict = handlers_dict
+        self.infrastruc_code_dict = infrastruc_code_dict
+        self.infrastruc_code_file = infrastruc_code_file
+        self.model_folder = model_folder
+        # Auxiliary methods execution
+        self.init_model_gen_cls_list()
+        self.init_sc_to_handlers_dict()
+
+    # === Method ===
+    def generate_models(self):
+        """
+        Method that generates all the Pysa models by
+        relying on dedicated classes.
+        """
+        for model_gen_cls in self.model_gen_cls_list:
+            # The following cycle is necessary because model generation
+            # classes have been designed to process only one source code
+            # file at a time.
+            for sc_file, handlers_list in self.sc_to_handlers_dict.items():
+                try:
+                    # Instantiation of model generator object
+                    model_generator = model_gen_cls(handlers_list,
+                                                    sc_file,
+                                                    self.model_folder)
+                    # Generation of Pysa models with dedicated method
+                    model_generator.generate_models()
+                except Exception as e:
+                    print('--- Exception raised while generating Pysa models with class: ---')
+                    print(f'--- {model_gen_cls} ---')
+                    print('--- Exception details: ---')
+                    print(f'--- {e} ---')
+
+    # === Method ===
+    def init_model_gen_cls_list(self):
+        """
+        Method that initializes a list of classes that
+        will be used to generate the Pysa models. Such
+        classes generate different types of models.
+        NOTE: When new classes are available, the list
+        needs to be updated.
+        """
+        self.model_gen_cls_list = [HandlerSourceModelGeneratorCls,
+                                   HandlerSinkModelGeneratorCls]
+
+    # === Method ===
+    def init_sc_to_handlers_dict(self):
+        """
+        Method that initializes a dictionary that maps
+        the following keys and values:
+        -) Keys: Strings with full path of the source
+        code files containing handlers for which Pysa
+        models have to be generated.
+        -) Values: List of strings with handlers names
+        (i.e., function names) for which Pysa models
+        have to be generated.
+        """
+        # Dictionary initialization
+        self.sc_to_handlers_dict = collections.defaultdict(list)
+        # The processing implemented in this method takes
+        # into account that the lambda handlers within
+        # the YAML file are specified by including:
+        # 1) A path relative to the YAML file
+        # 2) The name of the Python module
+        infrastruc_code_file_folder = os.path.dirname(self.infrastruc_code_file)
+        for handler_name in self.handlers_dict:
+            # Remove './' in front of information extracted
+            # from YAML file to facilitate path joining step
+            handler_path_info = self.infrastruc_code_dict['functions'][handler_name]['handler']
+            handler_path_info = re.sub(r'^\./', '', handler_path_info)
+            # Separate handler function name from the extracted path
+            handler_rel_path, handler_func = handler_path_info.split('.')
+            # Store extracted information
+            self.sc_to_handlers_dict[os.path.join(infrastruc_code_file_folder,
+                                                  handler_rel_path + '.py')].append(handler_func)
