@@ -13,6 +13,7 @@ from cloudflow.modules.typeannotationreslib import TypeAnnotationManagerCls
 from cloudflow.modules.codesyninjreslib import CodeSynInjManagerCls
 from cloudflow.modules.foldersmanagementreslib import FoldersManagerCls
 from cloudflow.modules.modelgenerationreslib import ModelGenerationManagerCls
+from cloudflow.modules.pysaconfigexecreslib import PysaConfigManagerCls
 
 # =========
 # Functions
@@ -92,6 +93,10 @@ class AnalysisManagerCls:
         Method that implements all the steps required prior
         to starting the actual analysis of the repository.
         """
+        # Instantiate class that generates Pysa configuration file
+        print('--- Pysa configuration file is about to be generated... ---')
+        pysa_config_manager = PysaConfigManagerCls(self.folders_manager)
+        pysa_config_manager.generate_config_file()
         # Instantiate class that generates Pysa models
         print('--- Pysa models are about to be generated... ---')
         model_gen_manager = ModelGenerationManagerCls(self.handlers_dict,
