@@ -3,6 +3,7 @@
 # ========================================
 import json
 import os
+import subprocess
 
 # ========================================
 # Import Python Modules (Project Specific)
@@ -155,4 +156,103 @@ class PysaConfigManagerCls:
                                               '..',
                                               'pyre-check',
                                               'stubs')
-        
+
+class PysaExecManagerCls:
+    """
+    Class that handles the execution of Pysa.
+    """
+    # === Constructor ===
+    def __init__(self,
+                 folders_manager,
+                 pysa_config_file='.pyre_configuration'):
+        """
+        Class constructor. Input arguments:
+        -) folders_manager: Instance of folders manager
+        object created with the tool's dedicated module.
+        -) pysa_config_file: Pysa configuration file.
+        Default value: '.pyre_configuration'.
+        """
+        # Attribute initialization
+        self.folders_manager = folders_manager
+        self.pysa_config_file = pysa_config_file
+        self._set_cur_working_folder()
+
+    # === Protected Method ===
+    def _exec_cmd(self, cmd):
+        """
+        Method that executes a command passed as a string.
+        """
+        tool_execution = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE, universal_newlines=True)
+        # Provide details on the command execution
+        if tool_execution.returncode == 0:
+            print(f'--- Successful execution of the command: {cmd} ---')
+        else:
+            print(f'--- Unsuccessful execution of the command: {cmd} ---')
+            print(f'--- Return code: {str(tool_execution.returncode)} ---')
+            print('--- Standard error: ---')
+            print(f'{tool_execution.stderr}')
+
+    # === Protected Method ===
+    def _get_cmd_dataflow_analysis(self):
+        """
+        Method that returns a string containing the
+        command used to execute a dataflow analysis
+        with Pysa.
+        """
+        # The command is specified in a list of strings
+        cmd_list = ['pyre', 'analyze', '--save-results-to', './pysa-runs']
+        return ' '.join(cmd_list)
+
+    # === Protected Method ===
+    def _get_cmd_type_inference(self):
+        """
+        Method that returns a string containing the
+        command used to execute an automated type
+        inference with Pyre.
+        """
+        # The command is specified in a list of strings
+        cmd_list = ['pyre', 'infer', '-i']
+        return ' '.join(cmd_list)
+
+    # === Protected Method ===
+    def _restore_cur_working_folder(self):
+        """
+        Method that restores the initial working folder.
+        """
+        os.chdir(self._initial_working_folder)
+        print(f'--- Working folder restored to: {os.getcwd()} ---')
+
+    # === Protected Method ===
+    def _set_cur_working_folder(self):
+        """
+        Method that sets the current working folder
+        to the CloudFlow analysis folder and saves
+        the initial working folder in a protected
+        instance variable.
+        """
+        self._initial_working_folder = os.getcwd()
+        print(f'--- Current working folder: {self._initial_working_folder} ---')
+        os.chdir(self.folders_manager.analysis_folder)
+        print(f'--- New working folder: {os.getcwd()} ---')
+        assert os.path.isfile(os.path.join(os.getcwd(), self.pysa_config_file)), \
+            '--- Inconsistency detected - Pysa configuration file not found ---'
+
+    # === Method ===
+    def exec_dataflow_analysis(self):
+        """
+        Method that executes a dataflow analysis with Pysa.
+        """
+        cmd = self._get_cmd_dataflow_analysis()
+        self._exec_cmd(cmd)
+        self._restore_cur_working_folder()
+
+    # === Method ===
+    def exec_type_inference(self):
+        """
+        Method that executes an automated type inference with Pyre.
+        NOTE: Pyre is the static type checker Pysa is built on.
+        """
+        cmd = self._get_cmd_type_inference()
+        self._exec_cmd(cmd)
+        self._restore_cur_working_folder()
