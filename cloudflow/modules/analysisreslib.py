@@ -13,7 +13,7 @@ from cloudflow.modules.typeannotationreslib import TypeAnnotationManagerCls
 from cloudflow.modules.codesyninjreslib import CodeSynInjManagerCls
 from cloudflow.modules.foldersmanagementreslib import FoldersManagerCls
 from cloudflow.modules.modelgenerationreslib import ModelGenerationManagerCls
-from cloudflow.modules.pysaconfigexecreslib import PysaConfigManagerCls
+from cloudflow.modules.pysaconfigexecreslib import PysaConfigManagerCls, PysaExecManagerCls
 
 # =========
 # Functions
@@ -115,6 +115,10 @@ class AnalysisManagerCls:
                                                     self.handlers_dict,
                                                     self.infrastruc_code_dict)
         code_syn_inj_manager.inject_synthesized_code()
+        # Instantiate class that handles the execution of Pysa
+        print('--- Automated type inference is about to start... ---')
+        self.pysa_exec_manager = PysaExecManagerCls(self.folders_manager)
+        self.pysa_exec_manager.exec_type_inference()
         return
 
     # === Method ===
@@ -140,7 +144,8 @@ class AnalysisManagerCls:
                 self.perm_dict, self.perm_res_dict = self._get_permissions_dicts()
                 # Perform steps required prior to starting analysis
                 self._prepare_analysis(self.folders_manager.repo_full_path)
-                print('--- Repository analysis only partially implemented ---')
+                print('--- Dataflow analysis is about to start... ---')
+                self.pysa_exec_manager.exec_dataflow_analysis()
             except Exception as e:
                 print('--- Exception raised - Details: ---')
                 print(f'--- {e} ---')
