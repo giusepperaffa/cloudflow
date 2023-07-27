@@ -5,6 +5,7 @@ import ast
 import collections
 import os
 import re
+import shutil
 
 # =================
 # Module Parameters
@@ -135,7 +136,9 @@ class ModelGenerationManagerCls:
     Class that provides an interface to the classes that
     generate Pysa models. Data structures initialized by
     the module analysisreslib are used to instantiate an
-    object of this class.
+    object of this class. Furthermore, this class copies
+    all the generic Pysa models available within the
+    tool repository in the analysis folder.
     """
     # === Constructor ===
     def __init__(self,
@@ -161,6 +164,22 @@ class ModelGenerationManagerCls:
         # Auxiliary methods execution
         self.init_model_gen_cls_list()
         self.init_sc_to_handlers_dict()
+        self.copy_generic_models()
+
+    # === Method ===
+    def copy_generic_models(self, generic_models_folder='pysamodels'):
+        """
+        Method that copies all the generic Pysa models
+        available within the tool repository in the
+        analysis folder (sub-folder dedicated to the
+        Pysa models).
+        """
+        # Full path of the folder containing the generic Pysa models
+        gm_folder_full_path = os.path.join(os.sep.join(__file__.split(os.sep)[:-2]), generic_models_folder)
+        # Only the files with the Pysa models extension are copied
+        for flt_file in (elem for elem in os.listdir(gm_folder_full_path)
+                         if os.path.splitext(elem)[1] == '.pysa'):
+            shutil.copy2(os.path.join(gm_folder_full_path, flt_file), self.model_folder)
 
     # === Method ===
     def generate_models(self):

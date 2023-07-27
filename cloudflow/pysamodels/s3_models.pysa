@@ -1,0 +1,3 @@
+# S3 Client - Model for list_objects method
+def mypy_boto3_s3.client.S3Client.list_objects() -> TaintSource[UserControlled]: ...
+
