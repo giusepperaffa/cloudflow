@@ -198,11 +198,14 @@ class TypeAnnotationManagerCls:
         module_name = self.interf_module_dict['name']
         class_names = self.interf_module_dict['classes']
         # AST node processing
-        if import_mode == 'full':
-            return all([call_node.func.value.id == module_name,
-                        call_node.func.attr in class_names])
-        elif import_mode == 'partial':
-            return call_node.func.id in class_names
+        try:
+            if import_mode == 'full':
+                return all([call_node.func.value.id == module_name,
+                            call_node.func.attr in class_names])
+            elif import_mode == 'partial':
+                return call_node.func.id in class_names
+        except Exception as e:
+            return False
 
     # === Method ===
     def _init_interf_objs_dict(self, import_mode):
