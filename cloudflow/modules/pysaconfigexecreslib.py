@@ -175,7 +175,6 @@ class PysaExecManagerCls:
         # Attribute initialization
         self.folders_manager = folders_manager
         self.pysa_config_file = pysa_config_file
-        self._set_cur_working_folder()
 
     # === Protected Method ===
     def _exec_cmd(self, cmd):
@@ -243,6 +242,7 @@ class PysaExecManagerCls:
         """
         Method that executes a dataflow analysis with Pysa.
         """
+        self._set_cur_working_folder()
         cmd = self._get_cmd_dataflow_analysis()
         self._exec_cmd(cmd)
         self._restore_cur_working_folder()
@@ -253,6 +253,7 @@ class PysaExecManagerCls:
         Method that executes an automated type inference with Pyre.
         NOTE: Pyre is the static type checker Pysa is built on.
         """
+        self._set_cur_working_folder()
         cmd = self._get_cmd_type_inference()
         self._exec_cmd(cmd)
         self._restore_cur_working_folder()
