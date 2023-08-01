@@ -22,7 +22,7 @@ from cloudflow.modules.permissionsreslib import PermissionsIdentifierCls
 @pytest.fixture
 def get_test_files_folder():
     return os.path.join(repo_full_path, 'tests', \
-        'test-files', os.path.splitext(__file__.split('_')[1])[0])
+        'test-files', os.path.splitext(os.path.basename(__file__))[0].split('_')[1])
 
 # ==============
 # Test Functions
