@@ -4,12 +4,6 @@
 import os
 import pytest
 import re
-import sys
-
-# ================
-# Script Variables
-# ================
-repo_full_path = os.sep.join(os.path.realpath(__file__).split(os.sep)[:-2])
 
 # ========================================
 # Import Python Modules (Project-specific)
@@ -21,9 +15,9 @@ from cloudflow.modules.modelgenerationreslib import HandlerSourceModelGeneratorC
 # Fixtures
 # ========
 @pytest.fixture
-def get_test_files_folder():
-    return os.path.join(repo_full_path, 'tests', \
-        'test-files', os.path.splitext(os.path.basename(__file__))[0].split('_')[1])
+def get_test_files_folder(get_main_test_files_folder):
+    return os.path.join(get_main_test_files_folder,
+                        os.path.splitext(os.path.basename(__file__))[0].split('_')[1])
 
 @pytest.fixture
 def reg_exp_new_line():
