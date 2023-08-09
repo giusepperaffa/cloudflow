@@ -4,6 +4,7 @@
 import json
 import os
 import subprocess
+import sys
 
 # ========================================
 # Import Python Modules (Project Specific)
@@ -19,18 +20,15 @@ class PysaConfigManagerCls:
     configuration file.
     """
     # === Constructor ===
-    def __init__(self, folders_manager, virtual_env='experiments'):
+    def __init__(self, folders_manager):
         """
         Class constructor. Input arguments:
         -) folders_manager: Instance of folders manager
         object created with the tool's dedicated module
-        -) virtual_env: String specifying the name of
-        the virtual environment where Pysa is installed.
-        Default value: 'experiments'.
         """
         # Attribute initialization
         self.folders_manager = folders_manager
-        self.virtual_env = virtual_env
+        self.virtual_env = self._get_virtual_env()
         self.pysa_config_dict = dict()
         # Auxiliary methods execution
         self.set_default_values()
@@ -100,6 +98,18 @@ class PysaConfigManagerCls:
         """
         return [full_path.replace(self.folders_manager.analysis_folder, '.')
                 for full_path in full_paths_list]
+
+    # === Protected Method ===
+    def _get_virtual_env(self):
+        """
+        Method that returns the virtual environment name.
+        """
+        # Consistency check. More details on how to determine if
+        # Python is running within a virtual environment are on
+        # on StackOverflow question 1871549.
+        assert sys.prefix != sys.base_prefix, \
+            '--- Inconsistency detected - Tool not running within a virtual environment ---'
+        return os.path.basename(sys.prefix)
 
     # === Method ===
     def generate_config_file(self):
@@ -200,7 +210,8 @@ class PysaExecManagerCls:
         with Pysa.
         """
         # The command is specified in a list of strings
-        cmd_list = ['pyre', 'analyze', '--save-results-to', './pysa-runs']
+        cmd_list = ['pyre', 'analyze', '--save-results-to']
+        cmd_list.append('./' + os.path.basename(self.folders_manager.pysa_results_folder))
         return ' '.join(cmd_list)
 
     # === Protected Method ===
