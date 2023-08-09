@@ -70,6 +70,11 @@ class FoldersManagerCls:
     def pysa_models_folder(self):
         return self._pysa_models_folder
 
+    # === Read-only Attribute ===
+    @property
+    def pysa_results_folder(self):
+        return self._pysa_results_folder
+
     # === Method ===
     def create_analysis_folder(self):
         """
@@ -101,6 +106,14 @@ class FoldersManagerCls:
         os.makedirs(self.pysa_models_folder)
 
     # === Method ===
+    def create_pysa_results_folder(self):
+        """
+        Method that creates the subfolder containing the Pysa results.
+        """
+        self._pysa_results_folder = os.path.join(self.analysis_folder, 'pysa-runs')
+        os.mkdir(self._pysa_results_folder)
+
+    # === Method ===
     def create_folders_structure(self):
         """
         Method that creates the folder structure
@@ -113,6 +126,7 @@ class FoldersManagerCls:
         # Create / fill subfolders within analysis folder
         self.copy_orig_repo()
         self.create_pysa_models_folder()
+        self.create_pysa_results_folder()
 
     # === Method ===
     def delete_analysis_folders(self):
