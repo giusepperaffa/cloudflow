@@ -1,9 +1,18 @@
 # ========================================
 # Import Python Modules (Standard Library)
 # ========================================
+import collections
+import csv
 import os
 import subprocess
+import re
+import shutil
 import sys
+
+# ========================================
+# Import Python Modules (Project Specific)
+# ========================================
+from cloudflow.utils.customprintreslib import print_table
 
 # =======
 # Classes
@@ -18,7 +27,9 @@ class PostprocessingManagerCls:
     # === Constructor ===
     def __init__(self, folder_manager,
                  virtual_env='venv-sapp',
-                 pysa_results_file='taint-output.json'):
+                 pysa_results_file='taint-output.json',
+                 sapp_script='sapptoolpostprocessor.py',
+                 sapp_script_folder='scripts'):
         """
         Class constructor. Input arguments:
         1) folder_manager: Instance of the folder manager
@@ -26,19 +37,34 @@ class PostprocessingManagerCls:
         2) virtual_env: String specifying the name of the
         SAPP (Pysa postprocessing tool) virtual environment.
         The class implement an automatic virtual environment
-        switch. 
+        switch.
+        3) sapp_script: String specifying the script used
+        to access the required information via resources
+        defined with the SAPP tool package.
+        4) sapp_script_folder: String specifying the folder
+        within the package where the SAPP script is stored.
         """
         # Attribute initialization
         self.folder_manager = folder_manager
         self.virtual_env = virtual_env
         self.pysa_results_file = pysa_results_file
+        self.sapp_script = sapp_script
+        self.sapp_script_folder = sapp_script_folder
+        # The following attribute contains fields that
+        # will be used to print / dump the Pysa results.
+        self._fieldnames = ['Issue',
+                            'Source File',
+                            'Source Line',
+                            'Sink File',
+                            'Sink Line',
+                            'Code',
+                            'Message'] 
 
     # === Protected Method ===
     def _analyse_db(self):
         """
         Method that analyses all the invidual issues
-        identified by Pysa and prints them out in a
-        user-friendly way. 
+        identified by Pysa. 
         """
         self._copy_db_analysis_script()
         # The analysis of the SAPP database is conducted
@@ -46,44 +72,61 @@ class PostprocessingManagerCls:
         # identified by Pysa is unknown a priori, so the
         # following while cycle continues until the last
         # Pysa issue is detected.
-        issue_counter = 1
+        self.issue_number = 1
         while True:
-            cmd = self._get_cmd_analyse_db(issue_counter)
+            cmd = self._get_cmd_analyse_db()
             self._exec_cmd(cmd)
             if not self._process_db_analysis_results(): break
-            # Increment issue counter ready for next analysis
-            issue_counter += 1
+            # Increment issue number ready for next analysis
+            self.issue_number += 1
         self._remove_db_analysis_script()
 
     # === Protected Method ===
     def _copy_db_analysis_script(self):
         """
-        TBC
+        Method that copies the SAPP tool script to the
+        analysis folder to facilitate its execution. 
         """
-        pass
+        # NOTE: The following code assumes that the
+        # current folder is the analysis folder and
+        # that the script to be copied is within a
+        # folder within the package.
+        self._repo_full_path = os.path.join(os.path.realpath(__file__).split(os.sep)[:-2])
+        shutil.copy2(os.path.join(self._repo_full_path, self.sapp_script_folder,
+                                  self.sapp_script), os.getcwd())
 
     # === Protected Method ===
-    def _dump_db_analysis_results(self):
+    def _dump_db_analysis_results(self, results_file='pysa_results.csv'):
         """
-        TBC
+        Method that generates a file containing the
+        results obtained with Pysa.
         """
-        pass
+        with open(os.path.join(self.folder_manager.pysa_results_folder,
+                               results_file), mode='w') as file_obj:
+            writer = csv.DictWriter(file_obj, fieldnames=self._fieldnames)
+            # The results file is populated with the contents
+            # of the results dictionary.
+            for issue_number in sorted(self.results_dict):
+                row_dict = {self._fieldnames[0]: issue_number}
+                row_dict.update({self.results_dict[elem.lower()] for elem
+                                 in self._fieldnames[1:]})
+                writer.writerow(row_dict)
 
     # === Protected Method ===
     def _exec_cmd(self, cmd):
         """
         Method that executes a command passed as a string.
         """
-        tool_execution = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE, universal_newlines=True)
+        self._tool_execution = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE, universal_newlines=True)
         # Provide details on the command execution
-        if tool_execution.returncode == 0:
+        if self._tool_execution.returncode == 0:
             print(f'--- Successful execution of the command: {cmd} ---')
         else:
             print(f'--- Unsuccessful execution of the command: {cmd} ---')
-            print(f'--- Return code: {str(tool_execution.returncode)} ---')
+            print(f'--- Return code: {str(self._tool_execution.returncode)} ---')
             print('--- Standard error: ---')
-            print(f'{tool_execution.stderr}')
+            print(f'{self._tool_execution.stderr}')
 
     # === Protected Method ===
     def _generate_db(self):
@@ -96,18 +139,27 @@ class PostprocessingManagerCls:
         self._exec_cmd(cmd)
 
     # === Protected Method ===
-    def _get_cmd_analyse_db(self,
-                            issue_number,
-                            script='sapptoolpostprocessor.py'):
+    def _get_cmd_analyse_db(self, database_file='sapp.db'):
         """
-        TBC
+        Method that returns a string containing the
+        command to be executed to launch the script
+        that processes the SAPP database.
+        NOTE: The returned command includes the
+        default name of the database file created
+        by the SAPP tool. 
         """
-        pass
+        cmd_list = [self._get_venv_python_path()]
+        database_file_full_path = os.path.join(self.folder_manager.pysa_results_folder,
+                                               database_file)
+        cmd_list.extend([self.sapp_script, '-d', database_file_full_path,
+                         '-r', self.folder_manager.pysa_results_folder,
+                         '-i', self.issue_number])
+        return ' '.join(cmd_list)
 
     # === Protected Method ===
     def _get_cmd_generate_db(self):
         """
-        Method that returns that string containing the
+        Method that returns a string containing the
         command to be executed to generate a database
         with the SAPP tool starting from the results
         generated by Pysa.
@@ -117,7 +169,7 @@ class PostprocessingManagerCls:
         # executed within the correct environment. This is a
         # way of implementing a switch between environments.
         cmd_list = [self._get_venv_python_path()]
-        cmd_list.extend(['sapp', 'analyze', '.' + os.sep + 
+        cmd_list.extend(['sapp', 'analyze', os.curdir + os.sep + 
                          os.path.join(os.path.basename(self.folder_manager.pysa_results_folder),
                                       self.pysa_results_file)])
         return ' '.join(cmd_list)
@@ -142,18 +194,91 @@ class PostprocessingManagerCls:
                             python_path_info)
 
     # === Protected Method ===
+    def _print_db_analysis_results(self):
+        """
+        Method that prints out the results obtained
+        with Pysa. To improve readability, only a
+        subset of the results is printed. For further
+        details, check the generated results file. 
+        """
+        # Selected results are printed in a tabular form
+        column_headers = ['Parameter', 'Value']
+        # The following cycle prints out one table for
+        # each issue identified by Pysa.
+        for issue_number in sorted(self.results_dict):
+            table_contents = [[self._fieldnames[0], issue_number]]
+            for field in self._fieldnames[1:5]:
+                table_contents.append(self.results_dict[issue_number][field.lower()])
+            print_table(table_contents, column_headers)
+
+    # === Protected Method ===
     def _process_db_analysis_results(self):
         """
-        TBC
+        Method that processes the SAPP tool results.
+        The method returns a Boolean: True when 
+        the expected information is extracted, False
+        otherwise.
         """
-        pass
+        # The following code processes the standard output
+        # (string) obtained by executing a script that
+        # extracts the required information by relying on
+        # resources included in the SAPP Python package.
+        # Method output init
+        output = False
+        # Results dictionary init
+        self.results_dict = collections.defaultdict(dict)
+        # The standard output string is processed after
+        # identifying its multiple lines with the string
+        # method split. Such lines are then processed by
+        # using regular expressions.
+        issue_reg_exp = re.compile(r'^Set issue to (\d+)\.$')
+        code_reg_exp = re.compile(r'\bCode:.*?(\d+)\\n')
+        message_reg_exp = re.compile(r'\bMessage:(.*?)\\n')
+        source_reg_exp = re.compile(r'\bsource(.*):(\d+)\|\d+\|\d+$')
+        sink_reg_exp = re.compile(r'\bsink(.*):(\d+)\|\d+\|\d+$')
+        for line in self._tool_execution.stdout.split('\n'):
+            try:
+                if issue_reg_exp.search(line) is not None:
+                    # In this case, the line being processed contains
+                    # the number of the issue identified by Pysa.
+                    # An assertion is used to verify that the extracted
+                    # integer is the expected one. If everything is
+                    # consistent the rest of the standard output will
+                    # be processed to extract the required information.
+                    extracted_issue_number = int(issue_reg_exp.search(line).group(1))
+                    assert self.issue_number == extracted_issue_number,\
+                        '--- Inconsistency detected - Extracted and expected issue number do not match ---'
+                    output = True
+                elif code_reg_exp.search(line) is not None:
+                    # In this case, the line being processed contains
+                    # both the Pysa rule code and the associated message.
+                    # They will both be stored in the results dictionary
+                    # for completeness.
+                    self.results_dict[self.issue_number]['code'] = code_reg_exp.search(line).group(1)
+                    self.results_dict[self.issue_number]['message'] = message_reg_exp.search(line).group(1).strip()
+                elif source_reg_exp.search(line) is not None:
+                    # Extraction of source-related information
+                    self.results_dict[self.issue_number]['source file'] = source_reg_exp.search(line).group(1).strip()
+                    self.results_dict[self.issue_number]['source line'] = source_reg_exp.search(line).group(2)
+                elif sink_reg_exp.search(line) is not None:
+                    # Extraction of sink-related information
+                    self.results_dict[self.issue_number]['sink file'] = sink_reg_exp.search(line).group(1).strip()
+                    self.results_dict[self.issue_number]['sink line'] = sink_reg_exp.search(line).group(2)
+            except Exception as e:
+                print('--- Exception raised - Details: ---')
+                print(f'--- {e} ---')
+                output = False
+        return output
 
     # === Protected Method ===
     def _remove_db_analysis_script(self):
         """
-        TBC
+        Method that removes the SAPP tool script from
+        the analysis folder.
         """
-        pass
+        # NOTE: The following code assumes that the
+        # current folder is the analysis folder.
+        os.remove(self.sapp_script)
 
     # === Protected Method ===
     def _restore_cur_working_folder(self):
@@ -185,5 +310,6 @@ class PostprocessingManagerCls:
         self._set_cur_working_folder()
         self._generate_db()
         self._analyse_db()
+        self._print_db_analysis_results()
         self._dump_db_analysis_results()
         self._restore_cur_working_folder()
