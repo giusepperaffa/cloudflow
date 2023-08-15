@@ -14,6 +14,7 @@ from cloudflow.modules.codesyninjreslib import CodeSynInjManagerCls
 from cloudflow.modules.foldersmanagementreslib import FoldersManagerCls
 from cloudflow.modules.modelgenerationreslib import ModelGenerationManagerCls
 from cloudflow.modules.pysaconfigexecreslib import PysaConfigManagerCls, PysaExecManagerCls
+from cloudflow.modules.postprocessingreslib import PostprocessingManagerCls
 
 # =========
 # Functions
@@ -146,6 +147,9 @@ class AnalysisManagerCls:
                 self._prepare_analysis(self.folders_manager.repo_full_path)
                 print('--- Dataflow analysis is about to start... ---')
                 self.pysa_exec_manager.exec_dataflow_analysis()
+                print('--- Results postprocessing is about to start... ---')
+                self.postproc_manager = PostprocessingManagerCls(self.folders_manager)
+                self.postproc_manager.postprocess_pysa_results()
             except Exception as e:
                 print('--- Exception raised - Details: ---')
                 print(f'--- {e} ---')
