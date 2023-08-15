@@ -140,6 +140,10 @@ class PostprocessingManagerCls:
         print('--- Database generation with the SAPP tool is about to start ---')
         cmd = self._get_cmd_generate_db()
         self._exec_cmd(cmd)
+        # The command used to generate the SAPP database
+        # is a previously generated shell script, which
+        # can be removed after its execution.
+        os.remove(cmd)
 
     # === Protected Method ===
     def _get_cmd_analyse_db(self, database_file='sapp.db'):
