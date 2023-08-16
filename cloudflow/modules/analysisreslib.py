@@ -131,8 +131,7 @@ class AnalysisManagerCls:
         """
         # Instantiate class that handles the folder structure used by the tool
         print('--- Folder structure is being created... ---')
-        self.folders_manager = FoldersManagerCls(repo_full_path)
-        self.folders_manager.create_folders_structure()
+        self.folders_manager.create_folders_structure(repo_full_path)
         # Infrastructure code identification
         self.infrastruc_code_file = find_infrastruc_code_file(self.folders_manager.repo_full_path)
         if self.infrastruc_code_file:
@@ -160,6 +159,8 @@ class AnalysisManagerCls:
     # === Method ===
     def perform_analysis(self):
         print('--- CloudFlow analysis - Start ---')
+        self.folders_manager = FoldersManagerCls()
+        self.folders_manager.delete_analysis_folders()
         if self.config_obj.single:
             print('--- Analysis mode: Single repository ---')
             self.analyse_repo(self.config_obj.single)
