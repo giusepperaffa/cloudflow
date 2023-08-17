@@ -16,9 +16,12 @@ def process_program_inputs():
         analysis of serverless applications')
     mode_group_parser_obj = parser_obj.add_mutually_exclusive_group(required=True)
     mode_group_parser_obj.add_argument('-s', '--single', action='store', type=str, metavar='full_path', \
-    help='Single Mode - Only the specified repository is analysed')
+        help='Single Mode - Only the specified repository is analysed')
     mode_group_parser_obj.add_argument('-m', '--multi', action='store', type=str, metavar='full_path', \
         help='Multiple Mode - All the repositories within the specified folder are analysed')
+    mode_group_parser_obj.add_argument('-mb', '--microbenchmarks', action='store', type=str, metavar='category', \
+        help='Microbenchmarks Mode - The repositories within the microbenchmarks suite are analysed',
+        choices=['all', 'inter-procedural', 'intra-procedural', 'simple-apps'])
     return parser_obj.parse_args()
 
 def main():

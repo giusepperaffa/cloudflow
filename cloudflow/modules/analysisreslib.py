@@ -122,6 +122,38 @@ class AnalysisManagerCls:
         self.pysa_exec_manager.exec_type_inference()
         return
 
+    # === Protected Method ===
+    def _run_microbenchmarks_category(self, category):
+        """
+        Method that runs the category of microbenchmarks
+        passed as input argument. The category is expected
+        to be organized with a set of sub-folders that
+        contain the repositories to be analysed.
+        """
+        for sub_folder in os.listdir(os.path.join(self.mb_suite_full_path,
+                                                  category)):
+                self.analyse_repos_within_folder(os.path.join(self.mb_suite_full_path,
+                                                              category,
+                                                              sub_folder))
+
+    # === Method ===
+    def analyse_microbenchmarks(self, mb_suite='cloudbench'):
+        """
+        Method that analyses the microbenchmarks suite
+        specified as input parameter.
+        """
+        print('--- The following microbenchmarks suite is about to be tested: ---')
+        self.mb_suite_full_path = os.path.join(self.folders_manager.tool_repo_folder,
+                                               mb_suite)
+        print(f'--- {self.mb_suite_full_path} ---')
+        if self.config_obj.microbenchmarks in ('all', 'inter-procedural'):
+            self._run_microbenchmarks_category('inter-procedural')
+        if self.config_obj.microbenchmarks in ('all', 'intra-procedural'):
+            self._run_microbenchmarks_category('intra-procedural')
+        if self.config_obj.microbenchmarks in ('all', 'simple-apps'):
+            self.analyse_repos_within_folder(os.path.join(self.mb_suite_full_path,
+                                                          'simple-apps'))
+
     # === Method ===
     def analyse_repo(self, repo_full_path):
         """
@@ -157,6 +189,18 @@ class AnalysisManagerCls:
             print('--- Inconsistency detected - Analysis interrupted ---')
 
     # === Method ===
+    def analyse_repos_within_folder(self, target_folder):
+        """
+        Methods that analyses all the repositories within
+        the folder specified as input parameter.
+        """
+        for folder in (item for item in os.listdir(target_folder) if
+                       os.path.isdir(os.path.join(target_folder, item))):
+            print()
+            print(f'=== Start analysis of repository: {folder} ===')
+            self.analyse_repo(os.path.join(target_folder, folder))
+
+    # === Method ===
     def perform_analysis(self):
         print('--- CloudFlow analysis - Start ---')
         self.folders_manager = FoldersManagerCls()
@@ -166,8 +210,7 @@ class AnalysisManagerCls:
             self.analyse_repo(self.config_obj.single)
         elif self.config_obj.multi:
             print('--- Analysis mode: Multiple repositories ---')
-            for folder in (item for item in os.listdir(self.config_obj.multi) if
-                           os.path.isdir(os.path.join(self.config_obj.multi, item))):
-                print()
-                print(f'=== Start analysis of repository: {folder} ===')
-                self.analyse_repo(os.path.join(self.config_obj.multi, folder))
+            self.analyse_repos_within_folder(self.config_obj.multi)
+        elif self.config_obj.microbenchmarks:
+            print('--- Analysis mode: Microbenchmarks suite ---')
+            self.analyse_microbenchmarks()
