@@ -194,11 +194,15 @@ class AnalysisManagerCls:
         Methods that analyses all the repositories within
         the folder specified as input parameter.
         """
-        for folder in (item for item in os.listdir(target_folder) if
-                       os.path.isdir(os.path.join(target_folder, item))):
-            print()
-            print(f'=== Start analysis of repository: {folder} ===')
-            self.analyse_repo(os.path.join(target_folder, folder))
+        try:
+            for folder in (item for item in os.listdir(target_folder) if
+                           os.path.isdir(os.path.join(target_folder, item))):
+                print()
+                print(f'=== Start analysis of repository: {folder} ===')
+                self.analyse_repo(os.path.join(target_folder, folder))
+        except FileNotFoundError as e:
+            print('--- No analysis performed - Details: ---')
+            print(f'--- {e} ---')
 
     # === Method ===
     def perform_analysis(self):
