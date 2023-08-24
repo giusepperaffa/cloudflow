@@ -1,3 +1,6 @@
 s3:
     Bucket:
         name: 0
+    Object:
+        bucket_name: 0
+        key: 1

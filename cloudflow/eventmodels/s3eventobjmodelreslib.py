@@ -131,19 +131,32 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
         """
         Method to process the API upload_file.
         """
-        # The API call upload_file includes both positional and
+        # Start by processing the intermediate interface records
+        # to extract information relevant to this API.
+        self.process_all_interm_interf_records()
+        # The API call upload_file supports both positional and
         # keyword arguments. The information required to fill in
         # the data structure with the event object model data is
-        # extracted from specific positional arguments only. The
-        # following dictionary identifies the position of input
-        # argument of interest.
+        # extracted by inspecting both types of arguments (i.e.,
+        # keyword and positional). The following dictionary
+        # identifies the position of the relevant input arguments.
         pos_args_dict = {'Bucket': 1, 'Key': 2}
+        # Processing of the keyword arguments
+        for keyword in self.api_call_ast_node.keywords:
+            # Processing of keyword argument 'Bucket'
+            if keyword.arg == 'Bucket':
+                self.set_bucket_name(keyword.value)
+                self.set_bucket_arn(keyword.value)
+            # Processing of keyword argument 'Key'
+            elif keyword.arg == 'Key':
+                self.set_object_key(keyword.value)
+        # Processing of the positional arguments
         for index, arg in enumerate(self.api_call_ast_node.args):
             if index == pos_args_dict['Bucket']:
-                self.event_obj_model_data['bucket_name'] = arg
-                self.event_obj_model_data['bucket_arn'] = arg
+                self.set_bucket_name(arg)
+                self.set_bucket_arn(arg)
             elif index == pos_args_dict['Key']:
-                self.event_obj_model_data['object_key'] = arg
+                self.set_object_key(arg)
 
     # === Method ===
     def process_interm_bucket(self):
@@ -169,6 +182,30 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
             self.set_bucket_arn(self.interm_interf_record.args[pos_arg_index])
         except:
             print('--- No value extracted from positional arguments ---')
+
+    # === Method ===
+    def process_interm_object(self):
+        """
+        Method to process intermediate object of type Object.
+        """
+        # The initialization of a Object object requires
+        # two input arguments. The related information
+        # is stored in the following auxiliary variable.
+        pos_args_dict = {'bucket_name': 0, 'key': 1}
+        # Process keyword arguments
+        for keyword in self.interm_interf_record.keywords:
+            if keyword.arg == 'bucket_name':
+                self.set_bucket_name(keyword.value)
+                self.set_bucket_arn(keyword.value)
+            elif keyword.arg == 'key':
+                self.set_object_key(keyword.value)
+        # Process positional arguments
+        for index, arg in enumerate(self.interm_interf_record.args):
+            if index == pos_args_dict['bucket_name']:
+                self.set_bucket_name(arg)
+                self.set_bucket_arn(arg)
+            elif index == pos_args_dict['key']:
+                self.set_object_key(arg)
 
     # === Method ===
     def set_bucket_name(self, value):
