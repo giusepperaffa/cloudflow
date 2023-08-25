@@ -28,7 +28,7 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
                          interm_obj_config_dict)
 
     # === Method ===
-    def _get_bucket_arn(self):
+    def get_bucket_arn(self):
         """
         Method used to populate the event object model.
         It relies on an intermediate data structure.
@@ -39,7 +39,7 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
             return self.event_obj_model_data['bucket_arn']
 
     # === Method ===
-    def _get_bucket_name(self):
+    def get_bucket_name(self):
         """
         Method used to populate the event object model.
         It relies on an intermediate data structure.
@@ -48,14 +48,6 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
             return ast.Constant(None)
         else:
             return self.event_obj_model_data['bucket_name']
-
-    # === Method ===
-    def _get_event_name(self):
-        """
-        Method used to populate the event object model.
-        It relies on an intermediate data structure.
-        """
-        return ast.Constant(self.event_obj_model_data['event_name'])
 
     # === Method ===
     def get_event_obj_model(self):
@@ -69,19 +61,19 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
         try:
             ast_node = ast.Dict([ast.Constant('Records')],
                                 [ast.List([ast.Dict([ast.Constant('eventName'), ast.Constant('s3')],
-                                                    [self._get_event_name(),
+                                                    [self.get_event_name(),
                                                      ast.Dict([ast.Constant('bucket'), ast.Constant('object')],
                                                               [ast.Dict([ast.Constant('name'), ast.Constant('arn')],
-                                                                        [self._get_bucket_name(), self._get_bucket_arn()]),
+                                                                        [self.get_bucket_name(), self.get_bucket_arn()]),
                                                                         ast.Dict([ast.Constant('key')],
-                                                                                 [self._get_object_key()])])])])])
+                                                                                 [self.get_object_key()])])])])])
             return ast_node
         except Exception as e:
             print('--- Exception raised while creating event object model - Details: ---')
             print(f'--- {e} ---')
 
     # === Method ===
-    def _get_object_key(self):
+    def get_object_key(self):
         """
         Method used to populate the event object model.
         It relies on an intermediate data structure.
@@ -101,7 +93,6 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
         this data data structure.
         """
         self.event_obj_model_data = dict()
-        self.event_obj_model_data['event_name'] = self.event
         self.event_obj_model_data['bucket_name'] = None
         self.event_obj_model_data['bucket_arn'] = None
         self.event_obj_model_data['object_key'] = None

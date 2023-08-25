@@ -1,3 +1,8 @@
+# ========================================
+# Import Python Modules (Standard Library)
+# ========================================
+import ast
+
 # =======
 # Classes
 # =======
@@ -20,6 +25,13 @@ class ServiceEventObjModelGeneratorCls:
         # Processing steps needed to obtain the event object model
         self.init_model_data_dict()
         self.process_api_call()
+
+    # === Method ===
+    def get_event_name(self):
+        """
+        Method used to populate the event object model.
+        """
+        return ast.Constant(self.event)
 
     # === Method ===
     def get_event_obj_model(self):
