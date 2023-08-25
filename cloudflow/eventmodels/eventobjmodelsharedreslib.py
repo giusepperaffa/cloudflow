@@ -3,6 +3,22 @@
 # ========================================
 import ast
 
+# =========
+# Functions
+# =========
+def preprocess_api_call(process_api_method):
+    """
+    Decorator function that executes standard
+    preprocessing steps prior to executing
+    an API-specific processing method.
+    """
+    def wrapper(*args, **kwargs):
+        print('--- Preprocessing steps are about be executed... ---')
+        args[0].process_all_interm_interf_records()
+        args[0].analyse_api_call_kw_args()
+        process_api_method(*args, **kwargs)
+    return wrapper
+
 # =======
 # Classes
 # =======
@@ -25,6 +41,14 @@ class ServiceEventObjModelGeneratorCls:
         # Processing steps needed to obtain the event object model
         self.init_model_data_dict()
         self.process_api_call()
+
+    # === Method ===
+    def analyse_api_call_kw_args(self):
+        """
+        Method to be implemented in the child class,
+        otherwise an exception is raised.
+        """
+        raise NotImplementedError('Method analyse_api_call_kw_args not implemented')
 
     # === Method ===
     def get_event_name(self):

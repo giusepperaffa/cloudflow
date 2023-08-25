@@ -6,7 +6,7 @@ import ast
 # ========================================
 # Import Python Modules (Project Specific)
 # ========================================
-from cloudflow.eventmodels.eventobjmodelsharedreslib import ServiceEventObjModelGeneratorCls
+from cloudflow.eventmodels.eventobjmodelsharedreslib import ServiceEventObjModelGeneratorCls, preprocess_api_call
 
 # =======
 # Classes
@@ -26,6 +26,20 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
                          api_call_ast_node,
                          interm_interf_record_set,
                          interm_obj_config_dict)
+
+    # === Method ===
+    def analyse_api_call_kw_args(self):
+        """
+        Method used to analyse the API call keyword arguments.
+        """
+        for keyword in self.api_call_ast_node.keywords:
+            # Processing of keyword argument 'Bucket'
+            if keyword.arg == 'Bucket':
+                self.set_bucket_name(keyword.value)
+                self.set_bucket_arn(keyword.value)
+            # Processing of keyword argument 'Key'
+            elif keyword.arg == 'Key':
+                self.set_object_key(keyword.value)
 
     # === Method ===
     def get_bucket_arn(self):
@@ -98,49 +112,28 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
         self.event_obj_model_data['object_key'] = None
 
     # === Method ===
+    @preprocess_api_call
     def process_api_put_object(self):
         """
         Method to process the API put_object.
         """
-        # Start by processing the intermediate interface records
-        # to extract information relevant to this API.
-        self.process_all_interm_interf_records()
-        # The API call put_object includes only keyword arguments.
-        # Some of them are used to fill in the data structure with
-        # the event object model data.
-        for keyword in self.api_call_ast_node.keywords:
-            # Processing of keyword argument 'Bucket'
-            if keyword.arg == 'Bucket':
-                self.set_bucket_name(keyword.value)
-                self.set_bucket_arn(keyword.value)
-            # Processing of keyword argument 'Key'
-            elif keyword.arg == 'Key':
-                self.set_object_key(keyword.value)
+        # The API call put_object includes only keyword arguments,
+        # which are processed by the decorator function. No further
+        # processing is required.
+        pass
 
     # === Method ===
+    @preprocess_api_call
     def process_api_upload_file(self):
         """
         Method to process the API upload_file.
         """
-        # Start by processing the intermediate interface records
-        # to extract information relevant to this API.
-        self.process_all_interm_interf_records()
-        # The API call upload_file supports both positional and
-        # keyword arguments. The information required to fill in
-        # the data structure with the event object model data is
-        # extracted by inspecting both types of arguments (i.e.,
-        # keyword and positional). The following dictionary
-        # identifies the position of the relevant input arguments.
+        # The API call upload_file supports both keyword and
+        # positional arguments. The keyword arguments are
+        # processed by the decorator function, whereas the
+        # positional arguments are processed by the code in
+        # this method.
         pos_args_dict = {'Bucket': 1, 'Key': 2}
-        # Processing of the keyword arguments
-        for keyword in self.api_call_ast_node.keywords:
-            # Processing of keyword argument 'Bucket'
-            if keyword.arg == 'Bucket':
-                self.set_bucket_name(keyword.value)
-                self.set_bucket_arn(keyword.value)
-            # Processing of keyword argument 'Key'
-            elif keyword.arg == 'Key':
-                self.set_object_key(keyword.value)
         # Processing of the positional arguments
         for index, arg in enumerate(self.api_call_ast_node.args):
             if index == pos_args_dict['Bucket']:
