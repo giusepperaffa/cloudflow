@@ -112,6 +112,30 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
         self.event_obj_model_data['object_key'] = None
 
     # === Method ===
+    def preprocess_api_upload_file(self):
+        """
+        Method to preprocess the API upload_file.
+        """
+        # List of positional arguments required by the API
+        # when it is called on boto3 client object.
+        pos_args_list = ['Filename', 'Bucket', 'Key']
+        # NOTE: The above list has to be preprocessed because when
+        # the API is called on an intermediate object, e.g. Bucket,
+        # the number of positional arguments and, consequently,
+        # their positions are different. This is because some
+        # pieces of information are passed to the intermediate
+        # object constructor rather than to the actual API call.
+        # To detect if an intermediate object has already provided
+        # information required for the event object model, the
+        # data structure holding that information is is checked.
+        if self.event_obj_model_data['bucket_name'] is not None:
+            pos_args_list.remove('Bucket')
+        if self.event_obj_model_data['object_key'] is not None:
+            pos_args_list.remove('Key')
+        pos_args_dict = {pos_arg: index for index, pos_arg in enumerate(pos_args_list)}
+        return pos_args_dict
+
+    # === Method ===
     @preprocess_api_call
     def process_api_put_object(self):
         """
@@ -133,13 +157,13 @@ class S3EventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
         # processed by the decorator function, whereas the
         # positional arguments are processed by the code in
         # this method.
-        pos_args_dict = {'Bucket': 1, 'Key': 2}
+        pos_args_dict = self.preprocess_api_upload_file()
         # Processing of the positional arguments
         for index, arg in enumerate(self.api_call_ast_node.args):
-            if index == pos_args_dict['Bucket']:
+            if index == pos_args_dict.get('Bucket', None):
                 self.set_bucket_name(arg)
                 self.set_bucket_arn(arg)
-            elif index == pos_args_dict['Key']:
+            elif index == pos_args_dict.get('Key', None):
                 self.set_object_key(arg)
 
     # === Method ===
