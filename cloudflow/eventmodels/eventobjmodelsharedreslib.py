@@ -13,7 +13,7 @@ def preprocess_api_call(process_api_method):
     an API-specific processing method.
     """
     def wrapper(*args, **kwargs):
-        print('--- Preprocessing steps are about be executed... ---')
+        print('--- Preprocessing steps are about to be executed... ---')
         args[0].process_all_interm_interf_records()
         args[0].analyse_api_call_kw_args()
         process_api_method(*args, **kwargs)
