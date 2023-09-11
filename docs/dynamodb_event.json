@@ -1,0 +1,23 @@
+{
+   "Records": [
+     {
+       "dynamodb": {
+         "Keys": {
+           "Id": {
+             "N": "$Id"
+           }
+         },
+         "NewImage": {
+           "Message": {
+             "S": "$Message"
+           },
+           "Id": {
+             "N": "$Id"
+           }
+         }
+       },
+       "eventName": "$eventName",
+       "eventSourceARN": "$eventSourceARN"
+     }
+   ]
+}

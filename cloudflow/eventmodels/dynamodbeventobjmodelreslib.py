@@ -27,19 +27,45 @@ class DynamodbEventObjModelGeneratorCls(ServiceEventObjModelGeneratorCls):
                          interm_interf_record_set,
                          interm_obj_config_dict)
 
+    # === Protected Method ===
+    def _remap_item_dict(self, ast_node, type_info='S'):
+        """
+        Method that remaps the item dictionary passed to the
+        put_item API when the latter is called on a Table
+        object. This remapping is necessary to guarantee
+        the consistency of the event object model. When
+        the remapping is unsuccessful, the AST node passed
+        as input argument is returned unaltered.
+        """
+        try:
+            remapped_values = [ast.Dict([ast.Constant(type_info)], [value])
+                               for value in ast_node.values]
+            return ast.Dict(ast_node.keys, remapped_values)
+        except:
+            print('--- Item dictionary remapping unsuccessful ---')
+            return ast_node
+
     # === Method ===
     def analyse_api_call_kw_args(self):
         """
         Method used to analyse the API call keyword arguments.
         """
-        for keyword in self.api_call_ast_node.keywords:
-            # Processing of keyword argument 'Item'
-            if keyword.arg == 'Item':
-                self.set_dynamodb_keys(keyword.value)
-                self.set_dynamodb_new_image(keyword.value)
-            # Processing of keyword argument 'TableName'
-            elif keyword.arg == 'TableName':
-                self.set_event_source_arn(keyword.value)
+        if 'TableName' in [keyword.arg for keyword in self.api_call_ast_node.keywords]:
+            # CASE 1: API called on a boto3 client object
+            for keyword in self.api_call_ast_node.keywords:
+                # Processing of keyword argument 'Item'
+                if keyword.arg == 'Item':
+                    self.set_dynamodb_keys(keyword.value)
+                    self.set_dynamodb_new_image(keyword.value)
+                # Processing of keyword argument 'TableName'
+                elif keyword.arg == 'TableName':
+                    self.set_event_source_arn(keyword.value)
+        else:
+            # CASE 2: API called on a intermediate object Table
+            keyword = [keyword for keyword in self.api_call_ast_node.keywords
+                       if keyword.arg == 'Item'][0]
+            self.set_dynamodb_keys(self._remap_item_dict(keyword.value))
+            self.set_dynamodb_new_image(self._remap_item_dict(keyword.value))
 
     # === Method ===
     def get_dynamodb_keys(self):

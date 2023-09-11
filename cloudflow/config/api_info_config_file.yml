@@ -40,9 +40,12 @@ dynamodb:
     client_obj:
         put_item:
             events:
-                - EventName1
-                - EventName2
+                - stream
             permissions:
-                - PermissionName1
-                - PermissionName2
-    
+                - PutItem
+    resource_obj:
+        put_item:
+            events:
+                - stream
+            permissions:
+                - PutItem

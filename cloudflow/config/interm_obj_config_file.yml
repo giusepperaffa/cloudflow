@@ -4,3 +4,7 @@ s3:
     Object:
         bucket_name: 0
         key: 1
+
+dynamodb:
+    Table:
+        name: 0
