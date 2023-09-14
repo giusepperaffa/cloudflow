@@ -10,22 +10,12 @@ import yaml
 # ========================================
 from cloudflow.modules.permissionsreslib import PermissionsIdentifierCls
 
-# ========
-# Fixtures
-# ========
-@pytest.fixture
-def get_test_files_folder(get_main_test_files_folder):
-    return os.path.join(get_main_test_files_folder,
-                        os.path.splitext(os.path.basename(__file__))[0].split('_')[1])
-
 # ==============
 # Test Functions
 # ==============
-def test_one_service_cf_resource_syntax(get_test_files_folder):
-    test_file = os.path.join(get_test_files_folder, 'serverless_one_service_cf_resource_syntax.yml')
-    with open(test_file, mode='r') as file_obj:
-        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
-        perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
+@pytest.mark.yaml_test_file(__file__, 'serverless_one_service_cf_resource_syntax.yml')
+def test_one_service_cf_resource_syntax(get_yaml_test_file_dict):
+    perm_identifier_obj = PermissionsIdentifierCls(get_yaml_test_file_dict)
     assert perm_identifier_obj.get_num_of_services() == 1
     assert perm_identifier_obj.perm_dict['dynamodb'] == \
         set(['Query', 'Scan', 'GetItem', 'PutItem', 'UpdateItem', 'DeleteItem'])
@@ -35,54 +25,44 @@ def test_one_service_cf_resource_syntax(get_test_files_folder):
         set([('dynamodb', 'Query'), ('dynamodb', 'Scan'), ('dynamodb', 'GetItem'), \
              ('dynamodb', 'PutItem'), ('dynamodb', 'UpdateItem'), ('dynamodb', 'DeleteItem')])
 
-def test_one_service_arn_resource_syntax(get_test_files_folder):
-    test_file = os.path.join(get_test_files_folder, 'serverless_one_service_arn_resource_syntax.yml')
-    with open(test_file, mode='r') as file_obj:
-        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
-        perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
+@pytest.mark.yaml_test_file(__file__, 'serverless_one_service_arn_resource_syntax.yml')
+def test_one_service_arn_resource_syntax(get_yaml_test_file_dict):
+    perm_identifier_obj = PermissionsIdentifierCls(get_yaml_test_file_dict)
     assert perm_identifier_obj.get_num_of_services() == 1
     assert perm_identifier_obj.perm_dict['dynamodb'] == \
         set(['Query', 'Scan', 'GetItem', 'PutItem', 'UpdateItem', 'DeleteItem'])
     assert len(perm_identifier_obj.perm_res_dict) == 1
     assert len(list(perm_identifier_obj.perm_res_dict.values())[0]) == 6
 
-def test_two_services(get_test_files_folder):
-    test_file = os.path.join(get_test_files_folder, 'serverless_two_services.yml')
-    with open(test_file, mode='r') as file_obj:
-        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
-        perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
+@pytest.mark.yaml_test_file(__file__, 'serverless_two_services.yml')
+def test_two_services(get_yaml_test_file_dict):
+    perm_identifier_obj = PermissionsIdentifierCls(get_yaml_test_file_dict)
     assert perm_identifier_obj.get_num_of_services() == 2
     assert len(perm_identifier_obj.perm_dict['dynamodb']) == 7
     assert perm_identifier_obj.perm_dict['s3'] == set(['*'])
     assert len(perm_identifier_obj.perm_res_dict) == 2
     assert set([('s3', '*')]) in list(perm_identifier_obj.perm_res_dict.values())
 
-def test_iam_old_syntax_one_service(get_test_files_folder):
-    test_file = os.path.join(get_test_files_folder, 'serverless_iam_old_syntax_one_service.yml')
-    with open(test_file, mode='r') as file_obj:
-        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
-        perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_old_syntax_one_service.yml')
+def test_iam_old_syntax_one_service(get_yaml_test_file_dict):
+    perm_identifier_obj = PermissionsIdentifierCls(get_yaml_test_file_dict)
     assert perm_identifier_obj.get_num_of_services() == 1
     assert perm_identifier_obj.perm_dict['s3'] == set(['Get*', 'List*'])
     assert '*' in perm_identifier_obj.perm_res_dict
     assert ('s3', 'Get*') in perm_identifier_obj.perm_res_dict['*']
 
-def test_iam_requiring_resolution(get_test_files_folder):
-    test_file = os.path.join(get_test_files_folder, 'serverless_iam_requiring_resolution.yml')
-    with open(test_file, mode='r') as file_obj:
-        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
-        perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_requiring_resolution.yml')
+def test_iam_requiring_resolution(get_yaml_test_file_dict):
+    perm_identifier_obj = PermissionsIdentifierCls(get_yaml_test_file_dict)
     assert perm_identifier_obj.get_num_of_services() == 1
     assert perm_identifier_obj.perm_dict['undefined'] == set(['${file(${self:custom.iam.${self:provider.stage}})}'])
     assert len(perm_identifier_obj.perm_res_dict) == 1
     assert 'undefined' in perm_identifier_obj.perm_res_dict
     assert perm_identifier_obj.perm_res_dict['undefined'] == set(['${file(${self:custom.iam.${self:provider.stage}})}'])
 
-def test_multi_services_resources(get_test_files_folder):
-    test_file = os.path.join(get_test_files_folder, 'serverless_multi_services_resources.yml')
-    with open(test_file, mode='r') as file_obj:
-        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
-        perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
+@pytest.mark.yaml_test_file(__file__, 'serverless_multi_services_resources.yml')
+def test_multi_services_resources(get_yaml_test_file_dict):
+    perm_identifier_obj = PermissionsIdentifierCls(get_yaml_test_file_dict)
     assert perm_identifier_obj.get_num_of_services() == 3
     assert perm_identifier_obj.perm_dict['s3'] == set(['*'])
     assert perm_identifier_obj.perm_dict['rekognition'] == set(['*'])
@@ -91,11 +71,9 @@ def test_multi_services_resources(get_test_files_folder):
     assert len(perm_identifier_obj.perm_res_dict) == 4
     assert perm_identifier_obj.perm_res_dict['*'] == set([('rekognition', '*')])
 
-def test_iam_old_syntax_multi_services_resources(get_test_files_folder):
-    test_file = os.path.join(get_test_files_folder, 'serverless_iam_old_syntax_multi_services_resources.yml')
-    with open(test_file, mode='r') as file_obj:
-        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
-        perm_identifier_obj = PermissionsIdentifierCls(extracted_dict)
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_old_syntax_multi_services_resources.yml')
+def test_iam_old_syntax_multi_services_resources(get_yaml_test_file_dict):
+    perm_identifier_obj = PermissionsIdentifierCls(get_yaml_test_file_dict)
     assert perm_identifier_obj.get_num_of_services() == 2
     assert perm_identifier_obj.perm_dict['s3'] == \
         set(['ListBucket', 'GetObject', 'PutObject'])
