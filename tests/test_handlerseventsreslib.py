@@ -92,3 +92,8 @@ def test_multi_events_via_strings(get_yaml_test_file_dict):
     assert he_identifier_obj.handlers_dict['cloudwatchLogsSubscriber'] == \
         set([('cloudwatchLog', '/aws/lambda/some-service-${self:provider.stage}-someFunction1'),
              ('cloudwatchLog', '/aws/lambda/some-service-${self:provider.stage}-someFunction2')])
+
+@pytest.mark.yaml_test_file(__file__, 'serverless_aws_demo_app.yml')
+def test_dynamodb_stream(get_yaml_test_file_dict):
+    he_identifier_obj = HandlersEventsIdentifierCls(get_yaml_test_file_dict)
+    assert he_identifier_obj.handlers_dict['onDynamoDBStream'] == set([('dynamodb', 'stream')])
