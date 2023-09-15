@@ -1,3 +1,6 @@
 # DynamoDB Client - Model for scan method
 def mypy_boto3_dynamodb.client.DynamoDBClient.scan(ScanFilter: TaintSink[Test]): ...
 
+# DynamoDB Table - Model for scan method
+def mypy_boto3_dynamodb.service_resource.Table.scan(ScanFilter: TaintSink[Test]): ...
+
