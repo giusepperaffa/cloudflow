@@ -110,7 +110,7 @@ def process_pysa_results(mb_repo):
                                       in row.items() if results_reg_exp.search(key) is not None})
     return pysa_results_list
 
-def process_expected_results(mb_repo):
+def process_expected_results(mb_repo, false_positive=False):
     """
     Function that processes the configuration file
     of the specific microbenchmark repository passed
@@ -133,6 +133,14 @@ def process_expected_results(mb_repo):
     for data_flow_dict in extracted_data_flow_list:
         data_flow_list.append({key.replace('-', ' ').title(): value
                                for key, value in data_flow_dict['data-flow'].items()})
+        # Add key dedicated to false positives setup in the
+        # last dictionary, if not present. Calling eval is
+        # necessary to obtain a Boolean rather than a string
+        # due to the implementation of extract_dict_from_yaml
+        try:
+            data_flow_list[-1]['False Positive'] = eval(data_flow_list[-1]['False Positive'])
+        except KeyError:
+            data_flow_list[-1]['False Positive'] = false_positive
     return data_flow_list
 
 # ==============
@@ -143,4 +151,9 @@ def test_mb(mb_repo_path):
     pysa_results_list = process_pysa_results(mb_repo_path)
     expected_results_list = process_expected_results(mb_repo_path)
     for expected_result in expected_results_list:
-        assert expected_result in pysa_results_list
+        false_positive = expected_result.pop('False Positive')
+        if false_positive:
+            assert expected_result not in pysa_results_list
+        else:
+            assert expected_result in pysa_results_list
+
