@@ -67,18 +67,23 @@ class TypeAnnotationManagerCls:
                 tree = ast.parse(sc_file_obj.read())
                 # Processing of the list of interface objects' records
                 for interf_record in self.interf_objs_dict[import_mode][sc_file]:
-                    # Name of the module containing the relevant stubs
-                    stub_module = self.config_dict[interf_record.service]['stub_module']
-                    # Annotation to be included in the new import statement
-                    type_ann = self.config_dict[interf_record.service][interf_record.instance_type + '_obj']
-                    # Create AST node with import statement
-                    import_statement = ast.ImportFrom(module=stub_module,
-                                                      names=[ast.alias(name=type_ann, asname=None)],
-                                                      level=0)
-                    # Add the new import statement as first line of processed file
-                    tree.body.insert(0, import_statement)
-                    # Add lineno & col_offset to the created node
-                    ast.fix_missing_locations(import_statement)
+                    try:
+                        # Name of the module containing the relevant stubs
+                        stub_module = self.config_dict[interf_record.service]['stub_module']
+                        # Annotation to be included in the new import statement
+                        type_ann = self.config_dict[interf_record.service][interf_record.instance_type + '_obj']
+                        # Create AST node with import statement
+                        import_statement = ast.ImportFrom(module=stub_module,
+                                                        names=[ast.alias(name=type_ann, asname=None)],
+                                                        level=0)
+                        # Add the new import statement as first line of processed file
+                        tree.body.insert(0, import_statement)
+                        # Add lineno & col_offset to the created node
+                        ast.fix_missing_locations(import_statement)
+                    except KeyError as e:
+                        print('--- Exception raised while adding imported resources - Missing key: ---')
+                        print(f'--- {e} ---')
+                        print('--- Check whether all the required services are configured ---')
             # Overwrite source code file to include modifications
             with open(sc_file, mode='w') as sc_file_obj:
                 sc_file_obj.write(astor.to_source(tree))
