@@ -1,0 +1,13 @@
+# =======================
+# Models for file objects
+# =======================
+# Model for builtin function open
+def open(file: TaintInTaintOut[LocalReturn]): ...
+
+# Models for write method
+def io.TextIOBase.write(self, __s: TaintSink[FileSystem_ReadWrite]): ...
+def io.TextIOBase.write(self, __s: TaintInTaintOut[Updates[self]]): ...
+
+# Model for context manager init
+def io.IOBase.__enter__(self: TaintInTaintOut[LocalReturn]): ...
+
