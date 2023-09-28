@@ -72,7 +72,7 @@ class EventObjModelGeneratorCls:
         # The service-specific part of the configuration file is
         # mapped into a dictionary and stored in an instance variable
         self.interm_obj_config_dict = extract_dict_from_yaml(config_folder_full_path,
-                                                             config_file)[self.service]
+                                                             config_file).get(self.service, {})
 
     # === Method ===
     def init_serv_cls_dict(self):
