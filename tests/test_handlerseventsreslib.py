@@ -97,3 +97,17 @@ def test_multi_events_via_strings(get_yaml_test_file_dict):
 def test_dynamodb_stream(get_yaml_test_file_dict):
     he_identifier_obj = HandlersEventsIdentifierCls(get_yaml_test_file_dict)
     assert he_identifier_obj.handlers_dict['onDynamoDBStream'] == set([('dynamodb', 'stream')])
+
+@pytest.mark.parametrize("test_file", [
+    'serverless_sqs_arn_string.yml',
+    'serverless_sqs_cf_getatt_one.yml',
+    'serverless_sqs_cf_getatt_two.yml',
+    'serverless_sqs_cf_importvalue.yml',
+    'serverless_sqs_cf_join.yml'
+])
+def test_sqs_service(get_test_files_folder, test_file):
+    test_file = os.path.join(get_test_files_folder, test_file)
+    with open(test_file, mode='r') as file_obj:
+        extracted_dict = yaml.load(file_obj, Loader=yaml.BaseLoader)
+        he_identifier_obj = HandlersEventsIdentifierCls(extracted_dict)
+    assert he_identifier_obj.handlers_dict['compute'] == set([('sqs', 'MessageSent')])

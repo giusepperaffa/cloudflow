@@ -1,0 +1,9 @@
+functions:
+  compute:
+    handler: handler.compute
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - MySecondQueue
+              - Arn

@@ -1,0 +1,11 @@
+functions:
+  compute:
+    handler: handler.compute
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt: [ SQSQueue, Arn ]
+    environment:
+      region_name : "us-west-2"
+      secret_name : "GitHubLabelBotCredentials"
+      repo : "apache/incubator-mxnet"

@@ -1,0 +1,7 @@
+functions:
+  compute:
+    handler: handler.compute
+    events:
+      - sqs:
+          arn:
+            Fn::ImportValue: MyExportedQueueArnId

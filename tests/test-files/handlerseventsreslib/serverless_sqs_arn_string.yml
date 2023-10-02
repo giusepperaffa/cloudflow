@@ -1,0 +1,5 @@
+functions:
+  compute:
+    handler: handler.compute
+    events:
+      - sqs: arn:aws:sqs:region:XXXXXX:MyFirstQueue

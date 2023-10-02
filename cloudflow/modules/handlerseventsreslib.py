@@ -20,6 +20,7 @@ class HandlersEventsIdentifierCls:
         the Serverless Framework YAML configuration file.
         """
         self.config_dict = config_dict
+        self._set_default_values()
         # Data structure containing handlers-related information
         # extracted by the methods implemented in this class.
         self.handlers_dict = collections.defaultdict(set)
@@ -37,6 +38,11 @@ class HandlersEventsIdentifierCls:
                 # In this special dynamodb-related case, the
                 # elements of the extracted tuple are swapped.
                 postproc_extr_event_info.append((extr_event[1], extr_event[0]))
+            elif extr_event[0] == 'sqs':
+                # In this special SQS-related case, the extracted
+                # information about the event is replaced by a
+                # fictitious event name to simplify the analysis.
+                postproc_extr_event_info.append((extr_event[0], 'MessageSent'))
             else:
                 postproc_extr_event_info.append(extr_event)
         return postproc_extr_event_info
@@ -49,8 +55,19 @@ class HandlersEventsIdentifierCls:
         """
         extr_events_info = []
         for service, info in event_dict.items():
-            if isinstance(info, dict):
-                for flt_key in (key for key in info if key in ('method', 'event', 'type')):
+            if service == 'sqs':
+                # The SQS service requires a dedicated processing.
+                try:
+                    extr_events_info.append((service, info['arn']))
+                except TypeError:
+                    extr_events_info.append((service, info))
+                except KeyError:
+                    print('--- Expected tag for SQS service not found in YAML file ---')
+                except Exception:
+                    print('--- Unexpected set-up for SQS service found in YAML file ---')
+                    print('--- Extracted handlers and events-related information is incomplete ---')
+            elif isinstance(info, dict):
+                for flt_key in (key for key in info if key in self.event_tag_set):
                     try:
                         # The split string method takes an integer as input argument
                         # that specifies the occurrence where the split has to take
@@ -65,6 +82,15 @@ class HandlersEventsIdentifierCls:
             else:
                 print('--- No information extracted - Data structure not supported ---')
         return self._postprocess_extr_event_info(extr_events_info)
+
+    # === Protect Method ===
+    def _set_default_values(self):
+        """
+        Method that sets default values to be used by the class
+        """
+        # Set of YAML tags to be detected in the processed event
+        # dictionary to extract event-related information.
+        self.event_tag_set = set(('event', 'method', 'type'))
 
     # === Method ===
     def extract_info_from_functions(self):
