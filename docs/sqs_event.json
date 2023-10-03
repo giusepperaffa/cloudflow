@@ -1,0 +1,8 @@
+{
+    "Records": [
+        {
+            "body": "$body",
+            "eventSourceARN": "$eventSourceARN"
+        }
+    ]
+}
