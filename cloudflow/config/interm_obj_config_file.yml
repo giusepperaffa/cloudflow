@@ -8,3 +8,7 @@ s3:
 dynamodb:
     Table:
         name: 0
+
+sqs:
+    Queue:
+        url: 0

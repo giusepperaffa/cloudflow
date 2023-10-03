@@ -9,6 +9,7 @@ import os
 # ========================================
 from cloudflow.eventmodels.s3eventobjmodelreslib import S3EventObjModelGeneratorCls
 from cloudflow.eventmodels.dynamodbeventobjmodelreslib import DynamodbEventObjModelGeneratorCls
+from cloudflow.eventmodels.sqseventobjmodelreslib import SQSEventObjModelGeneratorCls
 from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 
 # =======
@@ -86,3 +87,4 @@ class EventObjModelGeneratorCls:
         self.serv_cls_dict = dict()
         self.serv_cls_dict['s3'] = S3EventObjModelGeneratorCls
         self.serv_cls_dict['dynamodb'] = DynamodbEventObjModelGeneratorCls
+        self.serv_cls_dict['sqs'] = SQSEventObjModelGeneratorCls

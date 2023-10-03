@@ -49,3 +49,17 @@ dynamodb:
                 - stream
             permissions:
                 - PutItem
+
+sqs:
+    client_obj:
+        send_message:
+            events:
+                - MessageSent
+            permissions:
+                - SendMessage
+    resource_obj:
+        send_message:
+            events:
+                - MessageSent
+            permissions:
+                - SendMessage

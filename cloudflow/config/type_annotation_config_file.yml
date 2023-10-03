@@ -8,3 +8,7 @@ dynamodb:
     resource_obj: DynamoDBServiceResource
     stub_module: mypy_boto3_dynamodb
 
+sqs:
+    client_obj: SQSClient
+    resource_obj: SQSServiceResource
+    stub_module: mypy_boto3_sqs
