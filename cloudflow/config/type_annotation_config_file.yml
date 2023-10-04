@@ -12,3 +12,8 @@ sqs:
     client_obj: SQSClient
     resource_obj: SQSServiceResource
     stub_module: mypy_boto3_sqs
+
+sns:
+    client_obj: SNSClient
+    resource_obj: SNSServiceResource
+    stub_module: mypy_boto3_sns
