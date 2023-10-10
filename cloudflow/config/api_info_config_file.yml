@@ -63,3 +63,11 @@ sqs:
                 - MessageSent
             permissions:
                 - SendMessage
+
+sns:
+    client_obj:
+        publish:
+            events:
+                - None
+            permissions:
+                - Publish
