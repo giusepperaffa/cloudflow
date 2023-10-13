@@ -1,5 +1,15 @@
 s3:
     client_obj:
+        list_objects:
+            events:
+                - None
+            permissions:
+                - ListObjects
+        list_objects_v2:
+            events:
+                - None
+            permissions:
+                - ListObjects
         put_object:
             events:
                 - ObjectCreated:*
@@ -18,6 +28,16 @@ s3:
             permissions:
                 - PutObject
     resource_obj:
+        all:
+            events:
+                - None
+            permissions:
+                - ListBucket
+        delete:
+            events:
+                - None
+            permissions:
+                - DeleteObject
         put_object:
             events:
                 - ObjectCreated:*
@@ -43,12 +63,22 @@ dynamodb:
                 - stream
             permissions:
                 - PutItem
+        scan:
+            events:
+                - None
+            permissions:
+                - Scan
     resource_obj:
         put_item:
             events:
                 - stream
             permissions:
                 - PutItem
+        scan:
+            events:
+                - None
+            permissions:
+                - Scan
 
 sqs:
     client_obj:

@@ -103,7 +103,8 @@ class AnalysisManagerCls:
         model_gen_manager = ModelGenerationManagerCls(self.handlers_dict,
                                                       self.infrastruc_code_dict,
                                                       self.infrastruc_code_file,
-                                                      self.folders_manager.pysa_models_folder)
+                                                      self.folders_manager.pysa_models_folder,
+                                                      self.perm_dict)
         model_gen_manager.generate_models()
         # Instantiate class that adds boto3-related type annotations
         print('--- Boto3-specific type annotations are being added... ---')
