@@ -37,9 +37,9 @@ def find_infrastruc_code_file(repo_full_path):
                 print('--- Found infrastructure code file: ---')
                 print(f'--- {os.path.join(root, flt_file)} ---')
                 return os.path.join(root, flt_file)
-            else:
-                print('--- No infrastructure code file found! ---')
-                return
+        else:
+            print('--- No infrastructure code file found! ---')
+            return
     else:
         print('--- The specified repository does not exist! ---')
         return
