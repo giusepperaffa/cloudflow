@@ -1,0 +1,14 @@
+plugins:
+  - serverless-iam-roles-per-function
+
+functions:
+  func1:
+    handler: handler.get    
+    iamRoleStatements: []
+    vpc:
+      securityGroupIds:
+        - sg-xxxxxx
+      subnetIds:
+        - subnet-xxxx
+        - subnet-xxxxx
+

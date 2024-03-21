@@ -1,6 +1,6 @@
-# =========================================
-# Import Python Modules (Stanadard Library)
-# =========================================
+# ========================================
+# Import Python Modules (Standard Library)
+# ========================================
 import pytest
 
 # ========================================
@@ -20,5 +20,51 @@ def test_iam_roles_per_function_basic(get_yaml_test_file_dict):
     assert extracted_info.has_handlers_permissions()
     for handler, value in plugin_data['config']['IAMRolesPerFunction']['Override']:
         assert value
+    assert 'dynamodb:GetItem' in plugin_data['handlers']['func1']
+    assert 'dynamodb:PutItem' in plugin_data['handlers']['func2']
+
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_roles_per_function_empty.yml')
+def test_iam_roles_per_function_empty(get_yaml_test_file_dict):
+    plugin_manager = PluginManagerCls(get_yaml_test_file_dict)
+    extracted_info = plugin_manager.plugin_extracted_info
+    plugin_data = extracted_info.plugin_info
+    assert extracted_info.has_config_params_for_plugin('IAMRolesPerFunction')
+    # No handler-level permission is extracted in this case
+    assert not extracted_info.has_handlers_permissions()
+    # Since the test file relies on the default plugin configuration,
+    # the override behaviour is enabled.   
+    for handler, value in plugin_data['config']['IAMRolesPerFunction']['Override']:
+        assert value
+
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_roles_per_function_with_inherit.yml')
+def test_iam_roles_per_function_with_inherit(get_yaml_test_file_dict):
+    plugin_manager = PluginManagerCls(get_yaml_test_file_dict)
+    extracted_info = plugin_manager.plugin_extracted_info
+    plugin_data = extracted_info.plugin_info
+    assert extracted_info.has_config_params_for_plugin('IAMRolesPerFunction')
+    assert extracted_info.has_handlers_permissions()
+    # Since the inherit option is used in the test file for one of
+    # the two handlers, their override configuration is different.
+    for handler, value in plugin_data['config']['IAMRolesPerFunction']['Override']:
+        if handler == 'func1':
+            assert not value
+        elif handler == 'func2':
+            assert value
+        else:
+            raise ValueError('--- No expected handler detected ---')
+    assert 'dynamodb:GetItem' in plugin_data['handlers']['func1']
+    assert 'dynamodb:PutItem' in plugin_data['handlers']['func2']
+
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_roles_per_function_custom_config.yml')
+def test_iam_roles_per_function_custom_config(get_yaml_test_file_dict):
+    plugin_manager = PluginManagerCls(get_yaml_test_file_dict)
+    extracted_info = plugin_manager.plugin_extracted_info
+    plugin_data = extracted_info.plugin_info
+    assert extracted_info.has_config_params_for_plugin('IAMRolesPerFunction')
+    assert extracted_info.has_handlers_permissions()
+    # Because of the custom plugin configuration, the override
+    # configuration is always disabled. 
+    for handler, value in plugin_data['config']['IAMRolesPerFunction']['Override']:
+        assert not value
     assert 'dynamodb:GetItem' in plugin_data['handlers']['func1']
     assert 'dynamodb:PutItem' in plugin_data['handlers']['func2']
