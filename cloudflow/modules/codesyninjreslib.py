@@ -218,9 +218,9 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
 
     # === Protected Method ===
     def _check_api_permissions(self,
-                              service,
-                              interf_obj_type,
-                              api_name):
+                               service,
+                               interf_obj_type,
+                               api_name):
         """
         Method that checks whether the permissions required for
         the execution of the specified API are present in the
@@ -417,7 +417,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                     # Store AST node with API call
                     self.__api_to_process = self.cur_node
                 else:
-                    print('--- Permissions for API {self.cur_node.func.attr} not found - No code injected ---')
+                    print(f'--- Permissions for API {self.cur_node.func.attr} not found - No code injected ---')
         except AttributeError:
             # This exception is raised every time the func attribute of
             # the of Call object is not an Attribute object. To avoid
