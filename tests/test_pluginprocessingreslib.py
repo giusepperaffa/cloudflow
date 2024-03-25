@@ -68,3 +68,36 @@ def test_iam_roles_per_function_custom_config(get_yaml_test_file_dict):
         assert not value
     assert 'dynamodb:GetItem' in plugin_data['handlers']['func1']
     assert 'dynamodb:PutItem' in plugin_data['handlers']['func2']
+
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_roles_per_function_basic.yml')
+def test_plugin_config_params_extraction(get_yaml_test_file_dict):
+    plugin_manager = PluginManagerCls(get_yaml_test_file_dict)
+    extracted_info = plugin_manager.plugin_extracted_info
+    config_params = extracted_info.get_config_params_for_plugin('IAMRolesPerFunction')
+    expected_result = {'Override': {('func1', True), ('func2', True)}}
+    assert config_params == expected_result
+    # Test with not existing plugin
+    config_params = extracted_info.get_config_params_for_plugin('NotExisting')
+    assert config_params is None
+
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_roles_per_function_basic.yml')
+def test_handler_permissions_extraction(get_yaml_test_file_dict):
+    plugin_manager = PluginManagerCls(get_yaml_test_file_dict)
+    extracted_info = plugin_manager.plugin_extracted_info
+    handler_permissions = extracted_info.get_permissions_for_handler('func1')
+    expected_result = {'dynamodb:GetItem'}
+    assert handler_permissions == expected_result
+    # Test with cloud service filter. Expected result is unaltered,
+    # as the only service in the configuration file is dynamodb.
+    handler_permissions = extracted_info.get_permissions_for_handler('func1', 'dynamodb')
+    assert handler_permissions == expected_result
+    # Test with cloud service filter. Expected result is an empty
+    # set, as there are no permissions for the specified service.
+    handler_permissions = extracted_info.get_permissions_for_handler('func1', 's3')
+    assert handler_permissions == set()
+    # Test with keep_service_name parameter set to False
+    handler_permissions = extracted_info.get_permissions_for_handler('func1',
+                                                                     'dynamodb',
+                                                                     False)
+    expected_result = {'GetItem'}
+    assert handler_permissions == expected_result

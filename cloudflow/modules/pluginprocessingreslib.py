@@ -2,6 +2,7 @@
 # Import Python Modules (Standard Library)
 # ========================================
 import collections
+import re
 
 # ========================================
 # Import Python Modules (Project Specific)
@@ -21,6 +22,69 @@ class PluginExtractedInfoCls:
         facilitate the extraction of information. 
         """
         self.plugin_info = collections.defaultdict(dict)
+
+    # === Method ===
+    def get_config_params_for_plugin(self, plugin_name):
+        """
+        Method that returns the dictionary containing the
+        configuration parameters extracted for the plugin
+        specified as input argument. When an exception is
+        raised the method returns None.
+        NOTE: The plugin name is not processed by this method.
+        This implies that the string specifying the plugin
+        name must abide by the naming convention adopted
+        to initialize the data structure.
+        """
+        try:
+            return self.plugin_info['config'][plugin_name]
+        except KeyError as e:
+            print(f'--- Configuration parameters for plugin {plugin_name} not retrieved ---')
+            print(f'--- The following key is not present in the plugin data structure: {e} ---')
+            return None
+        except Exception as e:
+            print(f'--- Configuration parameters for plugin {plugin_name} not retrieved ---')
+            print(f'--- {e} ---')
+            return None
+
+    # === Method ===
+    def get_permissions_for_handler(self,
+                                    handler_name,
+                                    service_name=None,
+                                    keep_service_name=True):
+        """
+        Method that returns the permissions for a specific
+        handler as a set. Input parameters:
+        -) handler_name: String specifying the handler name
+        -) service_name: String specifying the cloud service
+        name. If None, all the available permissions are
+        returned, i.e., the service-related information is
+        ignored.
+        -) keep_service_name: Boolean flag. If True, the
+        service name is kept with the actual permission
+        name (e.g., dynamodb:GetItem), otherwise it is
+        removed (e.g., GetItem).
+        """
+        try:
+            # Extract permissions from data structure
+            if service_name is not None:
+                # The following set comprehension implements a filter by service name
+                permissions = {permission for permission in self.plugin_info['handlers'][handler_name]
+                            if permission.startswith(service_name)}
+            else:
+                permissions = self.plugin_info['handlers'][handler_name]
+            # Post-process extracted permissions information
+            if not keep_service_name:
+                return {re.sub('^[a-zA-Z0-9]+:', '', permission) for permission in permissions}
+            else:
+                return permissions
+        except KeyError as e:
+            print(f'--- Permissions for handler {handler_name} not retrieved ---')
+            print(f'--- The following key is not present in the plugin data structure: {e} ---')
+            return None
+        except Exception as e:
+            print(f'--- Permissions for handler {handler_name} not retrieved ---')
+            print(f'--- {e} ---')
+            return None
 
     # === Method ===
     def has_config_params_for_plugin(self, plugin_name):
