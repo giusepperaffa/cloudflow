@@ -12,6 +12,7 @@ from typing import Optional, NamedTuple
 # ========================================
 from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 from cloudflow.modules.eventobjmodelgenreslib import EventObjModelGeneratorCls
+from cloudflow.modules.permissionsreslib import analyse_api_permissions
 
 # =========
 # Functions
@@ -22,8 +23,10 @@ def get_api_call_ast_nodes(ast_tree, interf_record):
     structure) and returns in a set the ast.Call nodes
     containing direct or indirect API calls on the interface
     object the interf_record input refers to (see examples).
-    A set of intermediate interface objects' records is also
-    returned.
+    The function also returns:
+    -) A set of intermediate interface objects' records
+    -) A dictionary with the ast.Call nodes as keys, and the
+    corresponding AST function definition nodes as values.
     The function detects API calls made:
     1) Directly on the interface object, e.g.:
     s3_client.upload_file(...)
@@ -38,6 +41,8 @@ def get_api_call_ast_nodes(ast_tree, interf_record):
     interm_objs_set = set()
     # Initialize set storing intermediate objects' interface records
     interm_interf_record_set = set()
+    # Initialize set storing function definition nodes
+    func_def_ast_nodes = set()
     # Process AST tree (in-memory data structure)
     for node in ast.walk(ast_tree):
         if isinstance(node, ast.Call):
@@ -66,7 +71,43 @@ def get_api_call_ast_nodes(ast_tree, interf_record):
                     ))
             except:
                 pass
-    return api_call_ast_nodes, interm_interf_record_set
+        elif isinstance(node, ast.FunctionDef):
+            func_def_ast_nodes.add(node)
+    # Obtain dictionary that has the identified ast.Call as
+    # keys, and their AST function definition nodes as values.
+    api_call_func_def_dict = get_api_call_func_def_dict(api_call_ast_nodes,
+                                                        func_def_ast_nodes)
+    return api_call_ast_nodes, interm_interf_record_set, api_call_func_def_dict
+
+def get_api_call_func_def_dict(api_call_ast_nodes, func_def_ast_nodes):
+    """
+    Function that processes a set of API call AST nodes and
+    a set of AST function definition nodes to determine the
+    function a given API call AST node belongs to, if any.
+    A dictionary with the API call AST nodes as keys and the
+    corresponding AST function definition nodes as values is
+    returned. If an API call AST node is not included in any
+    of the processed AST function definition nodes, then the
+    dictinary value will be None.
+    """
+    # Initialize dictionary returned by the function
+    api_call_func_def_dict = {}
+    # The function definition node for each API call AST node
+    # is stored as a dictionary value.
+    for api_call_ast_node in api_call_ast_nodes:
+        for func_def_ast_node in func_def_ast_nodes:
+            # To identify the function the API call AST node belongs
+            # to, it is necessary to use ast.walk to yield all the
+            # descendant nodes. The attribute body of a function
+            # definition node only stores the direct children.
+            if api_call_ast_node in ast.walk(func_def_ast_node):
+                api_call_func_def_dict[api_call_ast_node] = func_def_ast_node
+                break
+        else:
+            # If this branch gets executed, then no function definition
+            # code was found for the API call AST node being processed.
+            api_call_func_def_dict[api_call_ast_node] = None
+    return api_call_func_def_dict
 
 def get_events_handlers_dict(handlers_dict):
     """
@@ -101,7 +142,8 @@ class CodeSynInjManagerCls:
                  interf_objs_dict,
                  perm_dict,
                  handlers_dict,
-                 infrastruc_code_dict):
+                 infrastruc_code_dict,
+                 plugin_info):
         """
         Class constructor.
         """
@@ -113,6 +155,8 @@ class CodeSynInjManagerCls:
         self.handlers_dict = handlers_dict
         # Data structure containing the infrastructure code dictionary
         self.infrastruc_code_dict = infrastruc_code_dict
+        # Object containing plugin-specific information
+        self.plugin_info = plugin_info
 
     # === Protected Method ===
     def _get_source_code_info(self):
@@ -162,17 +206,19 @@ class CodeSynInjManagerCls:
                     # refers to. Obtaining this information before modifying
                     # the source code is necessary because the order in which
                     # AST nodes are processed is NOT guaranteed.
-                    api_call_ast_nodes, interm_interf_record_set = get_api_call_ast_nodes(tree,
-                                                                                          interf_record)
+                    api_call_ast_nodes, interm_interf_record_set, api_call_func_def_dict = \
+                        get_api_call_ast_nodes(tree, interf_record)
                     # Create instance of class that modifies the source code
                     walker = CodeSynthesisInjectionCls(interf_record,
                                                        self.perm_dict,
                                                        self.handlers_dict,
                                                        self.infrastruc_code_dict,
+                                                       self.plugin_info,
                                                        self._read_config_file(),
                                                        sc_file,
                                                        api_call_ast_nodes,
-                                                       interm_interf_record_set)
+                                                       interm_interf_record_set,
+                                                       api_call_func_def_dict)
                     walker.walk(tree)
                 # Overwrite source code file to include synthesized code
                 with open(sc_file, mode='w') as sc_file_obj:
@@ -192,10 +238,12 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                  perm_dict,
                  handlers_dict,
                  infrastruc_code_dict,
+                 plugin_info,
                  config_dict,
                  sc_file,
                  api_call_ast_nodes,
-                 interm_interf_record_set):
+                 interm_interf_record_set,
+                 api_call_func_def_dict):
         """
         Class constructor.
         """
@@ -209,33 +257,41 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         self.perm_dict = perm_dict
         self.handlers_dict = handlers_dict
         self.infrastruc_code_dict = infrastruc_code_dict
+        self.plugin_info = plugin_info
         self.config_dict = config_dict
         self.sc_file = sc_file
         self.api_call_ast_nodes = api_call_ast_nodes
         self.interm_interf_record_set = interm_interf_record_set
+        self.api_call_func_def_dict = api_call_func_def_dict
         # Execution of initialization methods
-        self._init_api_lineno_set()
+        self._init_instance_vars()
 
     # === Protected Method ===
     def _check_api_permissions(self,
                                service,
                                interf_obj_type,
-                               api_name):
+                               api_name,
+                               function_name):
         """
         Method that checks whether the permissions required for
-        the execution of the specified API are present in the
-        repository infrastructure code file. If so, the API can
-        be executed and True is returned, False otherwise.
+        the execution of the specified API have been configured.
+        If so, the API can be executed and True is returned,
+        False otherwise.
         NOTE: This method must be run only on APIs specified in
         the tool config file, otherwise an unhandled exception
         is raised.
         """
         # Required permissions for the API are extracted from configuration dictionary  
         required_permissions = set(self.config_dict[service][interf_obj_type + '_obj'][api_name]['permissions'])
-        # If the intersection between the required permissions and those specified
-        # in the repository infrastructure code YAML file is a non-empty set, then
-        # the execution of the API is allowed.    
-        return (required_permissions & self.perm_dict[service]) != set([])
+        # Obtain handler name specified in the infrastructure code
+        handler_name = self._get_handler_from_function(function_name)
+        # Check whether required permissions have been configured with
+        # dedicated function.
+        return analyse_api_permissions(required_permissions,
+                                       self.perm_dict[service],
+                                       service,
+                                       self.plugin_info,
+                                       handler_name)
 
     # === Protected Method ===
     def _check_api_support(self,
@@ -255,6 +311,50 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
             print(f'--- The following tag is missing in the configuration file: ---')
             print(f'--- {e} ---')
             return False
+
+    # === Protected Method ===
+    def _get_handler_from_function(self, function_name):
+        """
+        Method that retrieves the handler name as specified in
+        the infrastructure code file at the first level below
+        the functions tag, starting from the actual function
+        name. While in most cases the two names match, this is
+        not mandatory. Furthermore:
+        -) The same function name can be used in multiple
+        modules. Therefore, the code in this method processes
+        the information on the specific source code file being
+        processed to reliably retrieve the handler name.
+        -) If no handler is identified, the method returns
+        None. This happens when the processed function is
+        not an event-triggered handler.
+        -) None is returned when an exception is raised.
+        """
+        try:
+            for handler_name in self.infrastruc_code_dict['functions']:
+                # Location of the actual function
+                handler_loc = self.infrastruc_code_dict['functions'][handler_name]['handler']
+                # Name of the folder containing the source code file
+                sc_file_folder = os.path.dirname(self.sc_file).split('/')[-1]
+                # Source code file name
+                sc_file_name = os.path.splitext(os.path.basename(self.sc_file))[0]
+                # Process extracted information
+                if ('/' in handler_loc) and handler_loc.endswith('/'.join([sc_file_folder,
+                                                                           sc_file_name + '.' + function_name])):
+                    # When this condition holds true, a path including folder
+                    # name and module name is used to identify the function.
+                    return handler_name
+                elif ('/' not in handler_loc) and handler_loc.endswith(sc_file_name + '.' + function_name):
+                    # When this condition holds true, only the module name
+                    # is used to identify the function.
+                    return handler_name
+            else:
+                # No handler was identified by the previous cycle
+                print(f'--- WARNING: No handler was identified for the function: {function_name} ---')
+                return
+        except:
+            # When an exception is raised, None is returned
+            print(f'--- WARNING: No handler was identified for the function: {function_name} ---')
+            return
 
     # === Protected Method ===
     def _get_handler_qual_name(self, handler_name):
@@ -310,13 +410,15 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                 yield None, None
 
     # === Protected Method ===
-    def _init_api_lineno_set(self):
+    def _init_instance_vars(self):
         """
-        Method that extracts and returns in a set the line
-        of code numbers where the API calls are.
+        Method that initialize instance variables necessary
+        to implement the required processing.
         """
         self.api_lineno_set = {api_call_ast_node.lineno for api_call_ast_node in
                                self.api_call_ast_nodes}
+        self.api_lineno_func_name_dict = {node.lineno: (None if func_def is None else func_def.name)
+                                          for node, func_def in self.api_call_func_def_dict.items()}
         return
 
     # === Protected Method ===
@@ -413,7 +515,8 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                 print(f'--- Permissions for API {self.cur_node.func.attr} being checked... ---')
                 if self._check_api_permissions(self.interf_record.service,
                                                self.interf_record.instance_type,
-                                               self.cur_node.func.attr):
+                                               self.cur_node.func.attr,
+                                               self.api_lineno_func_name_dict[self.cur_node.lineno]):
                     # Store AST node with API call
                     self.__api_to_process = self.cur_node
                 else:

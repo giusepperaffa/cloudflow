@@ -15,6 +15,7 @@ from cloudflow.modules.foldersmanagementreslib import FoldersManagerCls
 from cloudflow.modules.modelgenerationreslib import ModelGenerationManagerCls
 from cloudflow.modules.pysaconfigexecreslib import PysaConfigManagerCls, PysaExecManagerCls
 from cloudflow.modules.postprocessingreslib import PostprocessingManagerCls
+from cloudflow.modules.pluginprocessingreslib import PluginManagerCls
 
 # =========
 # Functions
@@ -89,6 +90,15 @@ class AnalysisManagerCls:
         return perm_identifier.perm_dict, perm_identifier.perm_res_dict
 
     # === Protected Method ===
+    def _get_plugin_info(self):
+        """
+        Method returning an instance of an object where all the
+        plugin-related information is stored.
+        """
+        plugin_manager = PluginManagerCls(self.infrastruc_code_dict)
+        return plugin_manager.plugin_extracted_info
+
+    # === Protected Method ===
     def _prepare_analysis(self, repo_full_path):
         """
         Method that implements all the steps required prior
@@ -115,7 +125,8 @@ class AnalysisManagerCls:
         code_syn_inj_manager = CodeSynInjManagerCls(type_ann_manager.interf_objs_dict,
                                                     self.perm_dict,
                                                     self.handlers_dict,
-                                                    self.infrastruc_code_dict)
+                                                    self.infrastruc_code_dict,
+                                                    self.plugin_info)
         code_syn_inj_manager.inject_synthesized_code()
         # Instantiate class that handles the execution of Pysa
         print('--- Automated type inference is about to start... ---')
@@ -175,6 +186,8 @@ class AnalysisManagerCls:
                 self.handlers_dict = self._get_handlers_dict()
                 # Extract permissions-related information
                 self.perm_dict, self.perm_res_dict = self._get_permissions_dicts()
+                # Extract plugin-related information
+                self.plugin_info = self._get_plugin_info()
                 # Perform steps required prior to starting analysis
                 self._prepare_analysis(self.folders_manager.repo_full_path)
                 print('--- Dataflow analysis is about to start... ---')

@@ -69,7 +69,7 @@ class PluginExtractedInfoCls:
             if service_name is not None:
                 # The following set comprehension implements a filter by service name
                 permissions = {permission for permission in self.plugin_info['handlers'][handler_name]
-                            if permission.startswith(service_name)}
+                               if permission.startswith(service_name)}
             else:
                 permissions = self.plugin_info['handlers'][handler_name]
             # Post-process extracted permissions information
@@ -110,6 +110,14 @@ class PluginExtractedInfoCls:
         handler-level information, False otherwise.
         """
         return 'handlers' in self.plugin_info
+
+    # === Method ===
+    def is_empty(self):
+        """
+        Method that returns True if the data structure managed by
+        this class is empty, False otherwise.
+        """
+        return self.plugin_info == {}
 
     # === Method ===
     def store_config_params(self, plugin_name, config_params_dict):
