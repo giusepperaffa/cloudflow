@@ -21,7 +21,7 @@ class IAMRolesPerFunctionPluginModelCls(PluginModelCls):
     # === Protected Method ===
     def _get_override_config(self):
         """
-        Method that initialize an instance variable that
+        Method that initializes an instance variable that
         stores in a Boolean the override configuration of
         the plugin.
         """
