@@ -9,6 +9,7 @@ import re
 # ========================================
 from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 from cloudflow.pluginmodels.iamrolesperfunctionpluginreslib import IAMRolesPerFunctionPluginModelCls
+from cloudflow.pluginmodels.stepfunctionspluginreslib import StepFunctionsPluginModelCls
 
 # =======
 # Classes
@@ -104,9 +105,17 @@ class PluginExtractedInfoCls:
             return False
 
     # === Method ===
+    def has_events_info(self):
+        """
+        Method that returns True if the data structure includes
+        event-related information, False otherwise.
+        """
+        return 'events' in self.plugin_info
+
+    # === Method ===
     def has_handlers_permissions(self):
         """
-        Method that returns True if the data structure includes 
+        Method that returns True if the data structure includes
         handler-level information, False otherwise.
         """
         return 'handlers' in self.plugin_info
@@ -128,6 +137,25 @@ class PluginExtractedInfoCls:
         """
         if config_params_dict is not None:
             self.plugin_info['config'][plugin_name] = config_params_dict
+
+    # === Method ===
+    def store_events_info(self, event_info_dict):
+        """
+        Method that stores event-related information in the data
+        structure handled by the class. The input parameter is a
+        dictionary structured as follows:
+        -) Keys: String specifying the handler.
+        -) Values: Set containing two-element tuples. The first
+        specifies the service (e.g., 'http'), whist the second
+        specifies the actual event (e.g., 'POST').
+        """
+        # Process event-related information
+        if event_info_dict is not None:
+            for handler, event_info_set in event_info_dict.items():
+                try:
+                    self.plugin_info['events'][handler].update(event_info_set)
+                except KeyError as e:
+                    self.plugin_info['events'][handler] = event_info_set
 
     # === Method ===
     def store_handlers_permissions(self, handlers_permissions_dict):
@@ -178,7 +206,9 @@ class PluginManagerCls:
         """
         Method that extracts and stores events-specific information.
         """
-        pass
+        # Extract event-related information
+        event_info_dict = plugin_model_obj.extract_events()
+        self.plugin_extracted_info.store_events_info(event_info_dict)
 
     # === Method ===
     def _extract_handlers_permissions(self, plugin_model_obj):
@@ -208,6 +238,7 @@ class PluginManagerCls:
         """
         self.plugin_models_dict = dict()
         self.plugin_models_dict['serverless-iam-roles-per-function'] = IAMRolesPerFunctionPluginModelCls
+        self.plugin_models_dict['serverless-step-functions'] = StepFunctionsPluginModelCls
 
     # === Method ===
     def process_all_plugins(self):

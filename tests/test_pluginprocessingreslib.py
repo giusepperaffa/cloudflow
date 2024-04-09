@@ -101,3 +101,19 @@ def test_handler_permissions_extraction(get_yaml_test_file_dict):
                                                                      False)
     expected_result = {'GetItem'}
     assert handler_permissions == expected_result
+
+@pytest.mark.yaml_test_file(__file__, 'serverless_step_functions_basic.yml')
+def test_step_functions_basic(get_yaml_test_file_dict):
+    plugin_manager = PluginManagerCls(get_yaml_test_file_dict)
+    extracted_info = plugin_manager.plugin_extracted_info
+    plugin_data = extracted_info.plugin_info
+    # The model for the plugin serverless-step-functions
+    # extracts neither configuration parameters nor
+    # handler-level permissions.
+    assert not extracted_info.has_config_params_for_plugin('StepFunctions')
+    assert not extracted_info.has_handlers_permissions()
+    # Check extracted event-related information
+    assert extracted_info.has_events_info()
+    assert plugin_data['events']['RecordAC'] == {('http', 'POST')}
+    assert plugin_data['events']['RecordDB'] == {('http', 'POST')}
+    assert plugin_data['events']['InviteSlack'] == {('http', 'POST')}
