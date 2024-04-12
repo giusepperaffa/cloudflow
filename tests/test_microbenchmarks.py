@@ -124,7 +124,7 @@ def process_expected_results(mb_repo, false_positive=False):
     try:
         mb_category, cloud_service, repo = mb_repo.split(os.sep)
         extracted_data_flow_list = mb_repo_config_dict[mb_category][cloud_service][repo]
-    except KeyError:
+    except ValueError:
         mb_category, repo = mb_repo.split(os.sep)
         extracted_data_flow_list = mb_repo_config_dict[mb_category][repo]
     # The data flow list extracted from the microbenchmarks'
