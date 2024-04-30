@@ -102,6 +102,14 @@ def test_handler_permissions_extraction(get_yaml_test_file_dict):
     expected_result = {'GetItem'}
     assert handler_permissions == expected_result
 
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_roles_per_function_basic.yml')
+def test_service_permissions_extraction(get_yaml_test_file_dict):
+    plugin_manager = PluginManagerCls(get_yaml_test_file_dict)
+    extracted_info = plugin_manager.plugin_extracted_info
+    perm_dict = extracted_info.get_permissions_all_services()
+    expected_result = {'dynamodb': set(['GetItem', 'PutItem'])}
+    assert perm_dict == expected_result
+
 @pytest.mark.yaml_test_file(__file__, 'serverless_step_functions_basic.yml')
 def test_step_functions_basic(get_yaml_test_file_dict):
     plugin_manager = PluginManagerCls(get_yaml_test_file_dict)

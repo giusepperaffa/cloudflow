@@ -48,6 +48,36 @@ class PluginExtractedInfoCls:
             return None
 
     # === Method ===
+    def get_permissions_all_services(self):
+        """
+        Method that returns in a dictionary the permissions
+        for all the identified services. The dictionary is
+        structured as follows:
+        -) Keys: String specifying the service (e.g., 's3')
+        -) Values: Set including the permissions specified
+        as strings (e.g., 'PutObject')
+        NOTE: If the data structure handled by the class
+        does not contain permissions-related information,
+        the method returns an empty dictionary.
+        """
+        if self.has_handlers_permissions():
+            # Initialize returned data structure
+            perm_dict = collections.defaultdict(set)
+            # Process the permissions for all the handlers
+            for permissions in self.plugin_info['handlers'].values():
+                for permission in permissions:
+                    try:
+                        service_name, permission_name = permission.split(':', 1)
+                        perm_dict[service_name].add(permission_name)
+                    except Exception as e:
+                        print(f'--- Exception raised while processing permission: {permission} ---')
+            return perm_dict
+        else:
+            print('--- No permissions-related information in plugin data structure ---')
+            # Return empty dictionary
+            return {}
+
+    # === Method ===
     def get_permissions_for_handler(self,
                                     handler_name,
                                     service_name=None,
