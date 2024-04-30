@@ -151,7 +151,8 @@ class ModelGenerationManagerCls:
                  infrastruc_code_dict,
                  infrastruc_code_file,
                  model_folder,
-                 perm_dict):
+                 perm_dict,
+                 plugin_info):
         """
         Class constructor. Input arguments:
         -) handlers_dict: Data structure initialized within
@@ -163,6 +164,8 @@ class ModelGenerationManagerCls:
         the folder where the Pysa models have to be stored.
         -) perm_dict: Data structure containing information
         on permissions provided by module permissionsreslib.
+        -) plugin_info: Data structure containing information
+        on plugins provided by module pluginprocessingreslib.
         """
         # Attribute initialization
         self.handlers_dict = handlers_dict
@@ -170,6 +173,7 @@ class ModelGenerationManagerCls:
         self.infrastruc_code_file = infrastruc_code_file
         self.model_folder = model_folder
         self.perm_dict = perm_dict
+        self.plugin_info = plugin_info
         # Auxiliary methods execution
         self.init_model_gen_cls_list()
         self.init_sc_to_handlers_dict()
@@ -186,8 +190,9 @@ class ModelGenerationManagerCls:
         analysis folder (sub-folder dedicated to the
         Pysa models). The permissions extracted from
         the YAML file of the application under test
-        are processed to filter out models of APIs
-        that cannot be executed.
+        (including those plugin-specific) are checked
+        to filter out models of APIs that cannot be
+        executed.
         """
         # Full path of the folder containing the generic Pysa models
         gm_folder_full_path = os.path.join(os.sep.join(__file__.split(os.sep)[:-2]), generic_models_folder)
@@ -196,14 +201,16 @@ class ModelGenerationManagerCls:
         config_dict = extract_dict_from_yaml(config_folder_full_path, config_file)
         # Regular expression that extracts API name from Pysa model
         extract_api_reg_exp = re.compile(r'\.([a-z0-9_]+)\(')
+        # Extract plugin-specific, permissions-related information
+        self.perm_dict_plugin = self.plugin_info.get_permissions_all_services()
         # Only the files with the Pysa models extension are processed
         for flt_file in (elem for elem in os.listdir(gm_folder_full_path)
                          if os.path.splitext(elem)[1] == '.pysa'):
             # Extract service from the model file (naming convention)
             service = flt_file.split('_')[0]
-            if  service not in self.perm_dict:
-                # Case 1: The model file is not specific to one of
-                # the services within the permissions dictionary.
+            if  (service not in self.perm_dict) and (service not in self.perm_dict_plugin):
+                # Case 1: The model file is not specific to any of
+                # the services within the permissions dictionaries.
                 # The file is copied without further processing.
                 shutil.copy2(os.path.join(gm_folder_full_path, flt_file), self.model_folder)
             else:
@@ -235,8 +242,12 @@ class ModelGenerationManagerCls:
                                         # not be updated.
                                         pass
                                 # Cross-check permissions extracted from the config file
-                                # with those specified the YAML file.
-                                if len(config_perm_set & self.perm_dict[service]) != 0:
+                                # with those specified in the YAML file. The latter set
+                                # must include plugin-specific permissions, and it is
+                                # obtained via the union of two sets.
+                                service_perm_set = self.perm_dict.get(service, set())
+                                service_perm_set_plugin = self.perm_dict_plugin.get(service, set())
+                                if len(config_perm_set & (service_perm_set | service_perm_set_plugin)) != 0:
                                     # Since the intersection of the two sets contains at
                                     # least one element, the application under test has
                                     # the permissions required to execute the API. The
