@@ -7,6 +7,7 @@ import collections
 # Import Python Modules (Project Specific)
 # ========================================
 from cloudflow.utils.customprintreslib import print_table
+from cloudflow.modules.customresolverreslib import resolve_value_from_yaml
 
 # =========
 # Functions
@@ -113,6 +114,24 @@ class PermissionsIdentifierCls:
         self.perm_res_dict = collections.defaultdict(set)
         self.extract_perm_from_provider()
         self.extract_perm_for_resources()
+        self.resolve_resources()
+
+    # === Protected Method ===
+    def _get_perm_dict_info(self):
+        """
+        Method extracting portion of the configuration dictionary with
+        permissions-related information. Both modern and old Serverless
+        Framework syntax supported.
+        """
+        # Init returned dictionary
+        extr_perm_dict_info = {}
+        try:
+            try:
+                extr_perm_dict_info = self.config_dict['provider']['iam']['role']['statements']
+            except KeyError:
+                extr_perm_dict_info = self.config_dict['provider']['iamRoleStatements']
+        finally:
+            return extr_perm_dict_info
 
     # === Method ===
     def extract_perm_for_resources(self):
@@ -164,23 +183,6 @@ class PermissionsIdentifierCls:
         return len(self.perm_dict)
 
     # === Method ===
-    def _get_perm_dict_info(self):
-        """
-        Method extracting portion of the configuration dictionary with
-        permissions-related information. Both modern and old Serverless
-        Framework syntax supported.
-        """
-        # Init returned dictionary
-        extr_perm_dict_info = {}
-        try:
-            try:
-                extr_perm_dict_info = self.config_dict['provider']['iam']['role']['statements']
-            except KeyError:
-                extr_perm_dict_info = self.config_dict['provider']['iamRoleStatements']
-        finally:
-            return extr_perm_dict_info
-
-    # === Method ===
     def pretty_print_perm_dict(self):
         for service in sorted(self.perm_dict):
             print_table([[perm] for perm in sorted(self.perm_dict[service])], \
@@ -190,3 +192,19 @@ class PermissionsIdentifierCls:
     def pretty_print_resources(self):
         print_table([[resource] for resource in sorted(self.perm_res_dict)], \
                     ['Resources'])
+
+    # === Method ===
+    def resolve_resources(self):
+        """
+        Method that postprocesses the dictionary with permissions-related
+        information for resources specified in the configuration dictionary
+        to attempt to fully resolve the resources' ARNs.
+        """
+        # Initialize auxiliary dictionary
+        temp_dict = {}
+        for resource, permissions in self.perm_res_dict.items():
+            # Store the permissions unaltered after attempting
+            # to fully resolve the resource ARN.
+            temp_dict[resolve_value_from_yaml(resource, self.config_dict)] = permissions
+        # Update resource-permission dictionary
+        self.perm_res_dict = temp_dict

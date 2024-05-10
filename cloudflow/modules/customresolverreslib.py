@@ -13,12 +13,13 @@ from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 # =========
 # Functions
 # =========
-def resolve_value_from_yaml(unres_value, config_dict):
+def resolve_value_from_yaml(unres_value, config_dict, max_recursion=10):
     """
-    Function that attempts to resolve an unresolved value
-    (specified as a string) from the Serverless Framework
-    YAML file by using the dictionary that maps this
-    configuration file.
+    Function that recursively attempts to resolve a value
+    (specified as a string) from the YAML file by using
+    the dictionary that maps this configuration file. The
+    parameter max_recursion controls the maximum number
+    of allowed recursive calls.
     NOTE: This function aims at resolving individual strings,
     and can be used, for instance, to attempt to resolve
     specific information included in the YAML that the main
@@ -27,30 +28,34 @@ def resolve_value_from_yaml(unres_value, config_dict):
     # Regular expression that identifies unresolved strings
     # according to the Serverless Framework syntax.
     unres_val_reg_exp = re.compile(r'\$\{self:([\w\.]+?)\}')
-    print('--- Attempting to resolve information from YAML file... ---')
-    # Process all the substrings to be resolved.
-    for substring in unres_val_reg_exp.findall(unres_value):
-        # Extracted substrings normally include '.' to separate
-        # the different fields, but '.' cannot be used with the
-        # configuration dictionary. The substring is processed
-        # to ensure that the resolved value is retrieved from
-        # the dictionary by using standard dictionary syntax.
-        try:
-            for depth, key in enumerate(substring.split('.')):
-                if depth == 0:
-                    res_value = config_dict[key]
-                else:
-                    res_value = res_value[key]
-            # Substitute specific substring with the resolved value
-            unres_value = re.sub(r'\$\{self:' + substring + '\}', res_value, unres_value)
-        except KeyError as e:
-            print('--- Exception raised - The following dictionary key was not found: ---')
-            print(f'--- {e} ---')
-        except Exception as e:
-            print('--- Exception raised - Details: ---')
-            print(f'--- {e} ---')
-    # Return input argument, because modified in place.
-    return unres_value
+    if (unres_val_reg_exp.search(unres_value) is not None) and (max_recursion != 0):
+        print('--- Attempting to resolve information from YAML file... ---')
+        # Process all the substrings to be resolved.
+        for substring in unres_val_reg_exp.findall(unres_value):
+            # Extracted substrings normally include '.' to separate
+            # the different fields, but '.' cannot be used with the
+            # configuration dictionary. The substring is processed
+            # to ensure that the resolved value is retrieved from
+            # the dictionary by using standard dictionary syntax.
+            try:
+                for depth, key in enumerate(substring.split('.')):
+                    if depth == 0:
+                        res_value = config_dict[key]
+                    else:
+                        res_value = res_value[key]
+                # Substitute specific substring with the resolved value
+                unres_value = re.sub(r'\$\{self:' + substring + '\}', res_value, unres_value)
+            except KeyError as e:
+                print('--- Exception raised - The following dictionary key was not found: ---')
+                print(f'--- {e} ---')
+            except Exception as e:
+                print('--- Exception raised - Details: ---')
+                print(f'--- {e} ---')
+        # Recursive call.
+        return resolve_value_from_yaml(unres_value, config_dict, max_recursion - 1)
+    else:
+        # Return input argument, because modified in place.
+        return unres_value
 
 # =======
 # Classes
