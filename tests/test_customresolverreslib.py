@@ -7,7 +7,9 @@ import pytest
 # ========================================
 # Import Python Modules (Project-specific)
 # ========================================
+from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 from cloudflow.modules.customresolverreslib import YAMLResolverCls
+from cloudflow.modules.customresolverreslib import resolve_value_from_yaml
 
 # ========
 # Fixtures
@@ -64,3 +66,13 @@ def test_concatenated_unresolved_value(get_test_files_folder, get_multi_unresolv
         '/aws/lambda/some-service-stage-someFunction1'
     assert resolved_yaml_dict['functions']['cloudwatchLogsSubscriber']['events'][1]['cloudwatchLog'] == \
         '/aws/lambda/some-service-stage-someFunction2'
+
+@pytest.mark.parametrize('test_value, expected_result', [
+    ('arn:aws:s3:::${self:custom.settings.BUCKET_NAME}/*',
+     'arn:aws:s3:::aws-python-project-test-bucket/*'),
+     ('arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.settings.DYNAMODB_TABLE}',
+      'arn:aws:dynamodb:eu-central-1:*:table/aws-python-project-test-table')
+])
+def test_unresolved_resources(get_test_files_folder, test_value, expected_result):
+    config_dict = extract_dict_from_yaml(get_test_files_folder, 'serverless_unresolved_resources.yml')
+    assert expected_result == resolve_value_from_yaml(test_value, config_dict)

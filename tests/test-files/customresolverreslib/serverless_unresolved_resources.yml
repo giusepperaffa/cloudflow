@@ -1,0 +1,99 @@
+service: aws-python-project
+
+frameworkVersion: '3'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  settings:
+    BUCKET_NAME: aws-python-project-test-bucket
+    DYNAMODB_TABLE: aws-python-project-test-table
+    DYNAMODB_MASTER_TABLE: aws-python-project-test-master-table
+
+provider:
+  name: aws
+  runtime: python3.8
+  profile: username
+  region: eu-central-1
+  environment: ${self:custom.settings}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+        - "s3:GetObject"
+        - "s3:PutObject"
+      Resource: "arn:aws:s3:::${self:custom.settings.BUCKET_NAME}/*"
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:Scan"
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:ListStreams"
+      Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.settings.DYNAMODB_TABLE}"
+
+functions:
+  onS3Upload:
+    handler: handlers/s3uploadhandler.onS3Upload
+    events:
+      - s3:
+          bucket: ${self:custom.settings.BUCKET_NAME}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+            - suffix: .txt
+  onDynamoDBStream:
+    handler: handlers/dynamodbstreamhandler.onDynamoDBStream
+    events:
+      - stream:
+          type: dynamodb
+          batchSize: 1
+          startingPosition: LATEST
+          arn:
+            Fn::GetAtt:
+              - TestTable
+              - StreamArn
+  onHTTPPostEvent:
+    handler: handlers/httphandler.onHTTPPostEvent
+    events:
+      - httpApi:
+          method: post
+          path: /produce
+    environment:
+      BUCKET_NAME: ${self:custom.settings.BUCKET_NAME}
+
+resources:
+  Resources:
+    TestTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: "itemId"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "itemId"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.settings.DYNAMODB_TABLE}
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+    MasterTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: "itemId"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "itemId"
+            KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:custom.settings.DYNAMODB_MASTER_TABLE}
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
