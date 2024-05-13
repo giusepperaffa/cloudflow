@@ -63,6 +63,8 @@ dynamodb:
                 - stream
             permissions:
                 - PutItem
+            resources:
+                - TableName: None
         scan:
             events:
                 - None
