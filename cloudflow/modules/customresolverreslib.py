@@ -27,7 +27,7 @@ def resolve_value_from_yaml(unres_value, config_dict, max_recursion=10):
     """
     # Regular expression that identifies unresolved strings
     # according to the Serverless Framework syntax.
-    unres_val_reg_exp = re.compile(r'\$\{self:([\w\.]+?)\}')
+    unres_val_reg_exp = re.compile(r'\$\{self:([\w\.\-]+?)\}')
     if (unres_val_reg_exp.search(unres_value) is not None) and (max_recursion != 0):
         print('--- Attempting to resolve information from YAML file... ---')
         # Process all the substrings to be resolved.
