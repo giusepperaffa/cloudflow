@@ -57,6 +57,30 @@ def resolve_value_from_yaml(unres_value, config_dict, max_recursion=10):
         # Return input argument, because modified in place.
         return unres_value
 
+def check_if_resolved(input):
+    """
+    Function that checks the input argument and returns
+    True if it is fully resolved, False otherwise. The
+    input argument can be either:
+    -) A string.
+    -) An iterable. If so, the function returns True
+    only if ALL the strings are resolved.
+    If an exception is raised, the function returns False.
+    """
+    # Regular expression that detects unresolved strings
+    unres_detect_reg_exp = re.compile(r'\$\{')
+    try:
+        if isinstance(input, str):
+            return unres_detect_reg_exp.search(input) is None
+        else:
+            return all((unres_detect_reg_exp.search(elem) is None) for elem in input)
+    except Exception as e:
+        print(f'--- Exception raised while checking if the following input is resolved: ---')
+        print(f'--- {input} ---')
+        print('--- Details: ---')
+        print(f'--- {e} ---')
+        return False
+
 # =======
 # Classes
 # =======
