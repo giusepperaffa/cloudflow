@@ -1,13 +1,15 @@
 # ========================================
 # Import Python Modules (Standard Library)
 # ========================================
+import ast
 import collections
 
 # ========================================
 # Import Python Modules (Project Specific)
 # ========================================
 from cloudflow.utils.customprintreslib import print_table
-from cloudflow.modules.customresolverreslib import resolve_value_from_yaml
+from cloudflow.utils.awsarnprocessingreslib import AWSARNManagerCls
+from cloudflow.modules.customresolverreslib import resolve_value_from_yaml, check_if_resolved
 
 # =========
 # Functions
@@ -96,6 +98,164 @@ def analyse_api_permissions(required_api_permissions,
         # only the permissions for the cloud service are considered.
         # To be reviewed when additional plugins are supported.
         return (required_api_permissions & service_permissions) != set([])
+
+def analyse_resource_level_permissions(required_api_permissions,
+                                       perm_res_dict,
+                                       service_name,
+                                       resources_info,
+                                       api_call_ast_node):
+    """
+    Function that determines whether an API call is allowed
+    by comparing the resource-level permissions with the
+    resource-related API input arguments. The function returns
+    a Boolean (True => API call allowed, False => API call not
+    allowed). NOTE: To minimize false negatives, the function
+    assumes that the required permissions are available when
+    there is not enough information to establish otherwise.
+    Therefore, it should be used along with the analysis code
+    that assesses whether the same API call is allowed on the
+    basis of the service-specific permissions.
+    The following input arguments are analysed:
+    -) required_api_permissions: Set storing the permissions
+    required for a given API call.
+    -) perm_res_dict: Dictionary with permissions-related
+    information for resources explicitly specified in the
+    YAML file. It can be obtained with one of the methods
+    of the PermissionsIdentifierCls class.
+    -) service_name: Input specifying as a string the name
+    of the relevant cloud service.
+    -) resources_info: Data structure with the information
+    that allows identifying the resource-related API input
+    arguments (i.e., input arguments that specify resources).
+    With the adopted structure of the API configuration file,
+    this input is a list of dictionaries, where each of them
+    is dedicated to a specific input argument. Example:
+    [{'TableName': 'None'}]. Note that both keys and values
+    are expected to be strings. NOTE: if the API does not
+    have any resource-related input arguments, None should
+    be passed instead.
+    -) api_call_ast_node: AST node of the API call.
+    """
+    # ================
+    # Nested functions
+    # ================
+    def extract_permission_set(resource, permission_resource_dict, service):
+        """
+        Function that processes the permission-resource dictionary
+        and returns the set of permissions for the specified resource
+        and the specified cloud service.
+        """
+        return {perm_tuple[1] for perm_tuple in permission_resource_dict[resource]
+                if perm_tuple[0] == service}
+    # ================
+    def get_close_match(resource_to_match, permission_resource_dict, service):
+        """
+        Function that processes the permission-resource dictionary
+        and returns the key that best match the input resource_to_match.
+        If no match is found, the function returns None.
+        """
+        for resource in permission_resource_dict:
+            # Initialize object that allows handling the ARN
+            resource_arn = AWSARNManagerCls(resource)
+            # Check the service specified in the ARN
+            if resource_arn.get_service() == service:
+                # Check the ARN resource id
+                if any([resource_arn.get_resource_id() == resource_to_match,
+                        all([('/' in resource_arn.get_resource_id()),
+                             resource_to_match in resource_arn.get_resource_id()])]):
+                    return resource
+
+    # ==================
+    # Preliminary checks
+    # ==================
+    # Preliminary checks are implemented to identify specific cases
+    # when the function can exit without running the main algorithm.
+    if resources_info is None:
+        print('--- No resource-related information for the API being processed ---')
+        # It the API being processed does not have any resource-related
+        # input argument, then the permissions are considered available.
+        # This facilitates the integration with the analysis code that
+        # extracts permissions-related information from other parts of
+        # the YAML file.
+        return True
+    elif '*' in perm_res_dict:
+        # If the wildcards syntax is used to specify permissions relevant
+        # to the API being processed, then a detailed processing of the
+        # resource-related API input arguments is not necessary. The
+        # permissions for the relevant service specified with wildcards
+        # syntax are compared with the permissions required for the API.
+        print('--- Wildcards syntax detected - Performing checks... ---')
+        permission_set = extract_permission_set('*', perm_res_dict, service_name)
+        if permission_set & required_api_permissions != set():
+            return True
+    # ==============
+    # Main algorithm
+    # ==============
+    # Process all the resource-related API input arguments.
+    print('--- Analysis of API resource-related input arguments is about to start... ---')
+    for resource_dict in resources_info:
+        # Auxiliary set initialization. This cycle stores a permission
+        # result for each resource-related input argument.
+        permission_results = set()
+        # Retrieve resource-related input argument name and position
+        resource_id, resource_pos_arg = list(resource_dict.items())[0]
+        # ==================================
+        # PART 1 - Process API call AST node
+        # ==================================
+        # Retrieve the value of the resource-related input argument
+        if resource_id in [keyword.arg for keyword in api_call_ast_node.keywords]:
+            # CASE 1 - The value of the resource-related input argument
+            # is retrieved from the API call keyword arguments.
+            resource_input = [keyword.value for keyword
+                              in api_call_ast_node.keywords if keyword.arg == resource_id][0]
+        else:
+            # CASE 2 - The value of the resource-related input argument
+            # is retrieved from the API call positional arguments.
+            try:
+                resource_input = api_call_ast_node.args[str(resource_pos_arg)]
+            except:
+                print(f'--- WARNING: No information extracted for {resource_id} ---')
+                # Since no information was extracted from the API call AST
+                # node, the next step of the cycle can restart without any
+                # further processing.
+                continue
+        # ======================================================
+        # PART 2 - Process resource-related input argument value
+        # ======================================================
+        if isinstance(resource_input, ast.Constant) and isinstance(resource_input.value, str):
+            # Find resource within permission-resource dictionary that
+            # matches the string extracted by processing the AST node.
+            resource_match = get_close_match(resource_input.value,
+                                             perm_res_dict,
+                                             service_name)
+            if resource_match is not None:
+                # A match for the resource specified as API input argument
+                # has been found. The corresponding permissions in the
+                # permission-resource dictionary are compared with those
+                # required for the execution of the API.
+                permission_set = extract_permission_set(resource_match,
+                                                        perm_res_dict,
+                                                        service_name)
+                permission_results.add(permission_set & required_api_permissions != set())
+            else:
+                # APPROXIMATION: Since a resource match has not been found,
+                # then the result depends on how accurately the resources
+                # in the permission-resource dictionary have been resolved.
+                # If all the resources have been fully resolved, and no
+                # match was found, then it is reasonable to conclude that
+                # the application does not have the permissions to execute
+                # the API call.
+                permission_results.add(not check_if_resolved(perm_res_dict))
+        else:
+            # If the input argument value does not hold a string literal, it
+            # cannot be inspected with the adopted approach. To simplify the
+            # integration with the analysis code that extracts information
+            # about permissions from other parts of the YAML file, permission
+            # is considered available.
+            permission_results.add(True)
+        # The returned boolean flag takes into account the results
+        # obtained for each resource-related API input argument.
+        return all(permission_results)
 
 # =======
 # Classes

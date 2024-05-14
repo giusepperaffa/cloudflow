@@ -12,7 +12,7 @@ from typing import Optional, NamedTuple
 # ========================================
 from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 from cloudflow.modules.eventobjmodelgenreslib import EventObjModelGeneratorCls
-from cloudflow.modules.permissionsreslib import analyse_api_permissions
+from cloudflow.modules.permissionsreslib import analyse_api_permissions, analyse_resource_level_permissions
 
 # =========
 # Functions
@@ -141,6 +141,7 @@ class CodeSynInjManagerCls:
     def __init__(self,
                  interf_objs_dict,
                  perm_dict,
+                 perm_res_dict,
                  handlers_dict,
                  infrastruc_code_dict,
                  plugin_info):
@@ -151,6 +152,9 @@ class CodeSynInjManagerCls:
         self.interf_objs_dict = interf_objs_dict
         # Data structure containing permissions-related information
         self.perm_dict = perm_dict
+        # Data structure containing permissions-related information
+        # for resources explicitly specified in the YAML file.
+        self.perm_res_dict = perm_res_dict
         # Data structure containing handlers-related information
         self.handlers_dict = handlers_dict
         # Data structure containing the infrastructure code dictionary
@@ -211,6 +215,7 @@ class CodeSynInjManagerCls:
                     # Create instance of class that modifies the source code
                     walker = CodeSynthesisInjectionCls(interf_record,
                                                        self.perm_dict,
+                                                       self.perm_res_dict,
                                                        self.handlers_dict,
                                                        self.infrastruc_code_dict,
                                                        self.plugin_info,
@@ -236,6 +241,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
     def __init__(self,
                  interf_record,
                  perm_dict,
+                 perm_res_dict,
                  handlers_dict,
                  infrastruc_code_dict,
                  plugin_info,
@@ -255,6 +261,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         # Initialization of additional attributes
         self.interf_record = interf_record
         self.perm_dict = perm_dict
+        self.perm_res_dict = perm_res_dict
         self.handlers_dict = handlers_dict
         self.infrastruc_code_dict = infrastruc_code_dict
         self.plugin_info = plugin_info
@@ -270,6 +277,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
     def _check_api_permissions(self,
                                service,
                                interf_obj_type,
+                               api_call_ast_node,
                                api_name,
                                function_name):
         """
@@ -281,17 +289,25 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         the tool config file, otherwise an unhandled exception
         is raised.
         """
-        # Required permissions for the API are extracted from configuration dictionary  
+        # Required permissions for the API are extracted from configuration dictionary
         required_permissions = set(self.config_dict[service][interf_obj_type + '_obj'][api_name]['permissions'])
+        # Resource-related information for the API are are extracted from configuration dictionary.
+        resource_info = self.config_dict[service][interf_obj_type + '_obj'][api_name].get('resources')
         # Obtain handler name specified in the infrastructure code
         handler_name = self._get_handler_from_function(function_name)
-        # Check whether required permissions have been configured with
-        # dedicated function.
-        return analyse_api_permissions(required_permissions,
-                                       self.perm_dict[service],
-                                       service,
-                                       self.plugin_info,
-                                       handler_name)
+        # Resource-level permissions result
+        resource_level_perm_res = analyse_resource_level_permissions(required_permissions,
+                                                                     self.perm_res_dict,
+                                                                     service,
+                                                                     resource_info,
+                                                                     api_call_ast_node)
+        # Service-specific permissions result
+        service_perm_res = analyse_api_permissions(required_permissions,
+                                                   self.perm_dict[service],
+                                                   service,
+                                                   self.plugin_info,
+                                                   handler_name)
+        return (service_perm_res and resource_level_perm_res)
 
     # === Protected Method ===
     def _check_api_support(self,
@@ -515,6 +531,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                 print(f'--- Permissions for API {self.cur_node.func.attr} being checked... ---')
                 if self._check_api_permissions(self.interf_record.service,
                                                self.interf_record.instance_type,
+                                               self.cur_node,
                                                self.cur_node.func.attr,
                                                self.api_lineno_func_name_dict[self.cur_node.lineno]):
                     # Store AST node with API call

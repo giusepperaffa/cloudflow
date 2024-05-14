@@ -125,6 +125,7 @@ class AnalysisManagerCls:
         print('--- Synthesized code is being injected... ---')
         code_syn_inj_manager = CodeSynInjManagerCls(type_ann_manager.interf_objs_dict,
                                                     self.perm_dict,
+                                                    self.perm_res_dict,
                                                     self.handlers_dict,
                                                     self.infrastruc_code_dict,
                                                     self.plugin_info)
