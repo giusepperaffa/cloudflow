@@ -1,6 +1,6 @@
-# =========================================
-# Import Python Modules (Stanadard Library)
-# =========================================
+# ========================================
+# Import Python Modules (Standard Library)
+# ========================================
 import os
 import pytest
 import yaml
