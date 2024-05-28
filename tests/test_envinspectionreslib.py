@@ -59,7 +59,6 @@ def test_non_existent_env_vars(get_test_files_folder, handler, env_var, expected
     result = env_inspection_manager.get_env_var_value(env_var)
     assert result is expected_result
 
-
 @pytest.mark.parametrize('handler, env_var, expected_result', [
     ('big', 'S3_CONTENT_BUCKET', None),
     ('oauth2callback', 'WEB_APP_URL', None)
@@ -77,3 +76,16 @@ def test_unresolved_env_vars(get_test_files_folder, handler, env_var, expected_r
                                                      None)
     result = env_inspection_manager.get_env_var_value(env_var)
     assert result is expected_result
+
+@pytest.mark.parametrize('handler, var, expected_result', [
+    ('encrypt', 'kms_key_alias', 'alias/psm-dev'),
+    ('encrypt', 'region', 'us-west-2')
+])
+def test_var_init_within_handler(get_test_files_folder, handler, var, expected_result):
+    infrastruc_code_dict = extract_dict_from_yaml(get_test_files_folder, 'serverless_provider_level_env_only.yml')
+    sc_file_full_path = os.path.join(get_test_files_folder, 'serverless_application_code_module.py')
+    env_inspection_manager = EnvInspectionManagerCls(infrastruc_code_dict,
+                                                     handler,
+                                                     sc_file_full_path)
+    result = env_inspection_manager.get_var_value_from_env(var)
+    assert result == expected_result

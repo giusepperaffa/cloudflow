@@ -1,4 +1,9 @@
 # ========================================
+# Import Python Modules (Standard Library)
+# ========================================
+import ast
+
+# ========================================
 # Import Python Modules (Project-specific)
 # ========================================
 from cloudflow.modules.customresolverreslib import check_if_resolved, resolve_value_from_yaml
@@ -88,3 +93,52 @@ class EnvInspectionManagerCls:
             return extracted_value
         else:
             return self._inspect_provider_level_env(env_var)
+
+    # === Method ===
+    def get_var_value_from_env(self, var):
+        """
+        Method that returns the value for the source code
+        variable var (to be specified as string), obtained
+        from the inspection of the handler-level or the
+        provider-level environment. In the following cases:
+        -) Input variable assignment not found in the code
+        -) Environment variable not found
+        -) Environment variable not fully resolved
+        the code returns None.
+        NOTE: This method only supports simple assignments
+        implemented with os.environ and os.getenv. Examples:
+        -) kms_key_alias = os.environ['KMS_KEY_ALIAS']
+        -) region = os.getenv('REGION')
+        """
+        with open(self.sc_file, mode='r') as sc_file_obj:
+            # Create in-memory data structure
+            ast_tree = ast.parse(sc_file_obj.read())
+            # Identify ast.Assign nodes to be processed. These have as
+            # a target (i.e., on the left hand-side of the assignment)
+            # the variable specified as method input argument.
+            for assign_node in (node for node in ast.walk(ast_tree)
+                                if isinstance(node, ast.Assign) and node.targets[0].id == var):
+                # ------------------------------------------------------
+                # CASE 1 - Assignment implemented with os.environ, e.g.:
+                # kms_key_alias = os.environ['KMS_KEY_ALIAS']
+                # ------------------------------------------------------
+                if isinstance(assign_node.value, ast.Subscript):
+                    # Create handle to ast.Subscript instance for readability,
+                    # and check if the assignment is implemented as expected.
+                    subscript_node = assign_node.value
+                    if all([subscript_node.value.value.id == 'os',
+                            subscript_node.value.attr == 'environ']):
+                        env_var = subscript_node.slice.value.value
+                        return self.get_env_var_value(env_var)
+                # -----------------------------------------------------
+                # CASE 2 - Assignment implemented with os.getenv, e.g.:
+                # region = os.getenv('REGION')
+                # -----------------------------------------------------
+                elif isinstance(assign_node.value, ast.Call):
+                    # Create handle to ast.Call instance for readability,
+                    # and check if assignment is implemented as expected.
+                    call_node =  assign_node.value
+                    if all([call_node.func.value.id == 'os',
+                            call_node.func.attr == 'getenv']):
+                        env_var = call_node.args[0].value
+                        return self.get_env_var_value(env_var)
