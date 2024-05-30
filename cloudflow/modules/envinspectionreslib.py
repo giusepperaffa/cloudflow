@@ -8,6 +8,27 @@ import ast
 # ========================================
 from cloudflow.modules.customresolverreslib import check_if_resolved, resolve_value_from_yaml
 
+# =========
+# Functions
+# =========
+def detect_os_environ_ast_node(subscript_node):
+    """
+    Function that processes an ast.Subscript node and
+    returns True if it is a os.environ node (False
+    otherwise).
+    """
+    return all([subscript_node.value.value.id == 'os',
+                subscript_node.value.attr == 'environ'])
+
+def detect_os_getenv_ast_node(call_node):
+    """
+    Function that processes an ast.Call node and
+    returns True if it is a os.getenv node (False
+    otherwise).
+    """
+    return all([call_node.func.value.id == 'os',
+                call_node.func.attr == 'getenv'])
+
 # =======
 # Classes
 # =======
@@ -126,8 +147,7 @@ class EnvInspectionManagerCls:
                     # Create handle to ast.Subscript instance for readability,
                     # and check if the assignment is implemented as expected.
                     subscript_node = assign_node.value
-                    if all([subscript_node.value.value.id == 'os',
-                            subscript_node.value.attr == 'environ']):
+                    if detect_os_environ_ast_node(subscript_node):
                         env_var = subscript_node.slice.value.value
                         return self.get_env_var_value(env_var)
                 # -----------------------------------------------------
@@ -138,7 +158,6 @@ class EnvInspectionManagerCls:
                     # Create handle to ast.Call instance for readability,
                     # and check if assignment is implemented as expected.
                     call_node =  assign_node.value
-                    if all([call_node.func.value.id == 'os',
-                            call_node.func.attr == 'getenv']):
+                    if detect_os_getenv_ast_node(call_node):
                         env_var = call_node.args[0].value
                         return self.get_env_var_value(env_var)
