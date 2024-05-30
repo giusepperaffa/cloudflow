@@ -14,7 +14,7 @@ from cloudflow.modules.customresolverreslib import check_if_resolved, resolve_va
 def detect_os_environ_ast_node(subscript_node):
     """
     Function that processes an ast.Subscript node and
-    returns True if it is a os.environ node (False
+    returns True if it is an os.environ node (False
     otherwise).
     """
     return all([subscript_node.value.value.id == 'os',
@@ -23,11 +23,46 @@ def detect_os_environ_ast_node(subscript_node):
 def detect_os_getenv_ast_node(call_node):
     """
     Function that processes an ast.Call node and
-    returns True if it is a os.getenv node (False
+    returns True if it is an os.getenv node (False
     otherwise).
     """
     return all([call_node.func.value.id == 'os',
                 call_node.func.attr == 'getenv'])
+
+def inspect_ast_node(ast_node,
+                     infrastruc_code_dict,
+                     handler_name,
+                     sc_file):
+    """
+    Function that processes the AST node passed as input argument
+    and returns its resolved value after inspecting the environment
+    variables. The function supports only these cases:
+    1) AST node with os.environ
+    2) AST node with os.getenv
+    3) AST node with variable name
+    In all other cases, the function returns None.
+    """
+    # Object used to inspect environment variables
+    env_inspection_manager = EnvInspectionManagerCls(infrastruc_code_dict,
+                                                     handler_name,
+                                                     sc_file)
+    # -----------------------------------------------
+    # CASE 1 - Inspected AST node includes os.environ
+    # -----------------------------------------------
+    if isinstance(ast_node, ast.Subscript) and detect_os_environ_ast_node(ast_node):
+        env_var = ast_node.slice.value.value
+        return env_inspection_manager.get_env_var_value(env_var)
+    # ----------------------------------------------
+    # CASE 2 - Inspected AST node includes os.getenv
+    # ----------------------------------------------
+    elif isinstance(ast_node, ast.Subscript) and detect_os_getenv_ast_node(ast_node):
+        env_var = ast_node.args[0].value
+        return env_inspection_manager.get_env_var_value(env_var)
+    # ---------------------------------------------
+    # CASE 3 - Inspected AST node includes variable
+    # ---------------------------------------------
+    elif isinstance(ast_node, ast.Name):
+        return env_inspection_manager.get_var_value_from_env(ast_node.id)
 
 # =======
 # Classes
