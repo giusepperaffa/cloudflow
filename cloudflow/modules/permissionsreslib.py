@@ -10,6 +10,7 @@ import collections
 from cloudflow.utils.customprintreslib import print_table
 from cloudflow.utils.awsarnprocessingreslib import AWSARNManagerCls
 from cloudflow.modules.customresolverreslib import resolve_value_from_yaml, check_if_resolved
+from cloudflow.modules.envinspectionreslib import inspect_ast_node
 
 # =========
 # Functions
@@ -103,7 +104,10 @@ def analyse_resource_level_permissions(required_api_permissions,
                                        perm_res_dict,
                                        service_name,
                                        resources_info,
-                                       api_call_ast_node):
+                                       api_call_ast_node,
+                                       infrastruc_code_dict,
+                                       handler_name,
+                                       sc_file):
     """
     Function that determines whether an API call is allowed
     by comparing the resource-level permissions with the
@@ -135,6 +139,11 @@ def analyse_resource_level_permissions(required_api_permissions,
     have any resource-related input arguments, None should
     be passed instead.
     -) api_call_ast_node: AST node of the API call.
+    -) infrastruc_code_dict: Dictionary that maps the YAML
+    file for the application under test.
+    -) handler_name: Input specifying as a string the name
+    of the relevant handler.
+    -) sc_file: Source code file to be processed (full path).
     """
     # ================
     # Nested functions
@@ -164,7 +173,6 @@ def analyse_resource_level_permissions(required_api_permissions,
                         all([('/' in resource_arn.get_resource_id()),
                              resource_to_match in resource_arn.get_resource_id()])]):
                     return resource
-
     # ==================
     # Preliminary checks
     # ==================
@@ -228,34 +236,51 @@ def analyse_resource_level_permissions(required_api_permissions,
             resource_match = get_close_match(resource_input.value,
                                              perm_res_dict,
                                              service_name)
-            if resource_match is not None:
-                # A match for the resource specified as API input argument
-                # has been found. The corresponding permissions in the
-                # permission-resource dictionary are compared with those
-                # required for the execution of the API.
-                permission_set = extract_permission_set(resource_match,
-                                                        perm_res_dict,
-                                                        service_name)
-                permission_results.add(permission_set & required_api_permissions != set())
-            else:
-                # APPROXIMATION: Since a resource match has not been found,
-                # then the result depends on how accurately the resources
-                # in the permission-resource dictionary have been resolved.
-                # If all the resources have been fully resolved, and no
-                # match was found, then it is reasonable to conclude that
-                # the application does not have the permissions to execute
-                # the API call.
-                permission_results.add(not check_if_resolved(perm_res_dict))
         else:
-            # If the input argument value does not hold a string literal, it
-            # cannot be inspected with the adopted approach. To simplify the
-            # integration with the analysis code that extracts information
-            # about permissions from other parts of the YAML file, permission
-            # is considered available.
-            permission_results.add(True)
-        # The returned boolean flag takes into account the results
-        # obtained for each resource-related API input argument.
-        return all(permission_results)
+            # Attempt to resolve the resource input with dedicated function.
+            resolved_resource_input = inspect_ast_node(resource_input,
+                                                       infrastruc_code_dict,
+                                                       handler_name,
+                                                       sc_file)
+            if resolved_resource_input is not None:
+                # Find resource within permission-resource dictionary that
+                # matches the string obtained by resolving the resource input.
+                resource_match = get_close_match(resolved_resource_input,
+                                                 perm_res_dict,
+                                                 service_name)
+            else:
+                # The input argument does not hold a value that can be resolved,
+                # and it cannot, therefore, be inspected with the adopted approach.
+                # To simplify the integration with the analysis code that extracts
+                # information about permissions from other parts of the YAML file,
+                # permission is considered available. The next step of the cycle
+                # can restart without any further processing.
+                permission_results.add(True)
+                continue
+        # ===============================
+        # PART 3 - Process resource match
+        # ===============================
+        if resource_match is not None:
+            # A match for the resource specified as API input argument
+            # has been found. The corresponding permissions in the
+            # permission-resource dictionary are compared with those
+            # required for the execution of the API.
+            permission_set = extract_permission_set(resource_match,
+                                                    perm_res_dict,
+                                                    service_name)
+            permission_results.add(permission_set & required_api_permissions != set())
+        else:
+            # APPROXIMATION: Since a resource match has not been found,
+            # then the result depends on how accurately the resources
+            # in the permission-resource dictionary have been resolved.
+            # If all the resources have been fully resolved, and no
+            # match was found, then it is reasonable to conclude that
+            # the application does not have the permissions to execute
+            # the API call.
+            permission_results.add(not check_if_resolved(perm_res_dict))
+    # The returned boolean flag takes into account the results
+    # obtained for each resource-related API input argument.
+    return all(permission_results)
 
 # =======
 # Classes

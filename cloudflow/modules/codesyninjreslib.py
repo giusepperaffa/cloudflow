@@ -300,7 +300,10 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                                                                      self.perm_res_dict,
                                                                      service,
                                                                      resource_info,
-                                                                     api_call_ast_node)
+                                                                     api_call_ast_node,
+                                                                     self.infrastruc_code_dict,
+                                                                     handler_name,
+                                                                     self.sc_file)
         # Service-specific permissions result
         service_perm_res = analyse_api_permissions(required_permissions,
                                                    self.perm_dict[service],
