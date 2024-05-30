@@ -2,6 +2,7 @@
 # Import Python Modules (Standard Library)
 # ========================================
 import ast
+import re
 
 # ========================================
 # Import Python Modules (Project-specific)
@@ -55,7 +56,7 @@ def inspect_ast_node(ast_node,
     # ----------------------------------------------
     # CASE 2 - Inspected AST node includes os.getenv
     # ----------------------------------------------
-    elif isinstance(ast_node, ast.Subscript) and detect_os_getenv_ast_node(ast_node):
+    elif isinstance(ast_node, ast.Call) and detect_os_getenv_ast_node(ast_node):
         env_var = ast_node.args[0].value
         return env_inspection_manager.get_env_var_value(env_var)
     # ---------------------------------------------
@@ -87,7 +88,7 @@ class EnvInspectionManagerCls:
         self.handler_name = handler_name
         self.sc_file = sc_file
         # Auxiliary instance variables
-        self.handler_info = self.infrastruc_code_dict['functions'][self.handler_name]
+        self.handler_info = self.infrastruc_code_dict['functions'].get(self.handler_name)
 
     # === Protected Method ===
     def _inspect_handler_level_env(self, env_var):
@@ -100,7 +101,10 @@ class EnvInspectionManagerCls:
             extracted_value = str(self.handler_info['environment'][env_var])
             return self._process_env_var_value(extracted_value)
         except:
-            return
+            try:
+                return self._inspect_unres_info(str(self.handler_info['environment']), env_var)
+            except:
+                return
 
     # === Protected Method ===
     def _inspect_provider_level_env(self, env_var):
@@ -116,7 +120,32 @@ class EnvInspectionManagerCls:
             extracted_value = str(self.infrastruc_code_dict['provider']['environment'][env_var])
             return self._process_env_var_value(extracted_value)
         except:
-            return
+            try:
+                return self._inspect_unres_info(str(self.infrastruc_code_dict['provider']['environment']), env_var)
+            except:
+                return
+
+    # === Protected Method ===
+    def _inspect_unres_info(self, env_info, env_var):
+        """
+        Method that processes unresolved information about
+        an environment. This method supports the case when
+        a YAML file environment tag identifies a different
+        section of the file, e.g.:
+        -) ${self:custom.settings}
+        If the processing is unsuccessful, returns None.
+        """
+        if not check_if_resolved(env_info):
+            try:
+                unres_val_reg_exp = re.compile(r'\$\{self:([\w\-\.]+)\}')
+                for index, key in enumerate(unres_val_reg_exp.search(env_info).group(1).split('.')):
+                    if index == 0:
+                        aux_var = self.infrastruc_code_dict[key]
+                    else:
+                        aux_var = aux_var[key]
+                return aux_var[env_var]
+            except:
+                return
 
     # === Protected Method ===
     def _process_env_var_value(self, env_var_value):
@@ -192,7 +221,7 @@ class EnvInspectionManagerCls:
                 elif isinstance(assign_node.value, ast.Call):
                     # Create handle to ast.Call instance for readability,
                     # and check if assignment is implemented as expected.
-                    call_node =  assign_node.value
+                    call_node = assign_node.value
                     if detect_os_getenv_ast_node(call_node):
                         env_var = call_node.args[0].value
                         return self.get_env_var_value(env_var)
