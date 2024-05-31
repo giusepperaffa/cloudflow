@@ -171,7 +171,7 @@ def analyse_resource_level_permissions(required_api_permissions,
                 # Check the ARN resource id
                 if any([resource_arn.get_resource_id() == resource_to_match,
                         all([('/' in resource_arn.get_resource_id()),
-                             resource_to_match in resource_arn.get_resource_id()])]):
+                             resource_to_match in resource_arn.get_resource_id().split('/')])]):
                     return resource
     # ==================
     # Preliminary checks
