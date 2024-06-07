@@ -10,11 +10,98 @@ import ast
 # =========
 # Functions
 # =========
-def analyse_event_filtering():
+def analyse_event_filtering(service_name,
+                            event_filtering_info,
+                            api_call_ast_node,
+                            infrastruc_code_dict,
+                            handler_name,
+                            sc_file):
     """
-    TBC
+    Function that determines whether an API call is subject to
+    event filtering by comparing the event filtering-related
+    information with the event filtering-relevant API input
+    arguments. The function returns a Boolean, i.e., True =>
+    Filtering successful (i.e., API call allowed), False =>
+    Filtering unsuccessful (i.e., API call not allowed).
+    NOTE: To minimize false negatives, the function assumes
+    that the filtering is successful when there is not enough
+    information to establish otherwise. Therefore, it should
+    be used with the analysis code that assesses the permissions.
+    The following input arguments are analysed:
+    -) service_name: Input specifying as a string the name of
+    the relevant cloud service.
+    -) event_filtering_info: Data structure with the information
+    that allows identifying the event filtering-relevant API input
+    arguments. With the adopted structure of the API configuration
+    file, this input is a list of dictionaries, where each of them
+    is dedicated to a specific input argument. Both keys and
+    values are expected to be strings. NOTE: if the API does
+    not have any event filtering-relevant input arguments, None
+    should be passed instead.
+    -) api_call_ast_node: AST node of the API call.
+    -) infrastruc_code_dict: Dictionary that maps the YAML file
+    for the application under test.
+    -) handler_name: Input specifying as a string the name of
+    the relevant handler.
+    -) sc_file: Source code file to be processed (full path).
     """
-    ...
+    # ==================
+    # Preliminary checks
+    # ==================
+    # Preliminary checks are implemented to identify specific cases
+    # when the function can exit without running the main algorithm.
+    if event_filtering_info is None:
+        print('--- No event filtering-related information for the API being processed ---')
+        # If the API being processed does not have any event filtering-related
+        # information, then the filtering is considered successful (i.e., the
+        # API call is allowed). This facilitates the integration with the
+        # analysis code that processes the permissions.
+        return True
+    # ==============
+    # Main algorithm
+    # ==============
+    print('--- Analysis of API event filtering-related input arguments is about to start... ---')
+    # Initialize event filtering manager object
+    event_filtering_manager = EventFilteringManagerCls(infrastruc_code_dict,
+                                                       service_name,
+                                                       handler_name,
+                                                       sc_file)
+    # Auxiliary set initialization. The following cycle stores an event-filtering
+    # result for each event filtering-related input argument.
+    event_filtering_results = set()
+    # Process all event filtering-related input arguments
+    for event_filtering_dict in event_filtering_info:
+        # Retrieve event filtering-related input argument name and position
+        input_id, input_pos_arg = list(event_filtering_dict.items())[0]
+        # ==================================
+        # PART 1 - Process API call AST node
+        # ==================================
+        ...
+        if input_ast_node is None:
+            # Since no information was extracted from the API call AST
+            # node, the next step of the cycle can start without any
+            # further processing.
+            continue
+        # =============================================================
+        # PART 2 - Process event filtering-related input argument value
+        # =============================================================
+        if isinstance(input_ast_node, ast.Constant) and isinstance(input_ast_node.value, str):
+            # The relevant API input argument is a string literal
+            event_filtering_results.add(event_filtering_manager.get_event_filtering_result(input_ast_node.value,
+                                                                                           'resolved'))
+        elif isinstance(input_ast_node, ast.Name):
+            # The relevant API input argument is variable
+            event_filtering_results.add(event_filtering_manager.get_event_filtering_result(input_ast_node.id,
+                                                                                           'unresolved'))
+        else:
+            # The input argument does not hold a value that can be inspected
+            # with the adopted approach. To simplify the integration with the
+            # analysis code that processes the permissions, the filtering is
+            # considered successful (i.e., the API call is allowed).
+            event_filtering_results.add(True)
+    # The returned boolean flag takes into account the results
+    # obtained for each event filtering-related API input argument.
+    return all(event_filtering_results)
 
 def s3_event_filtering_proc_func(input_to_check,
                                  infrastruc_code_dict,
