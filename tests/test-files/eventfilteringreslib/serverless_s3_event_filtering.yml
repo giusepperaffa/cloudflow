@@ -1,0 +1,62 @@
+service: aws-python-project
+
+frameworkVersion: '3'
+
+plugins:
+  - serverless-python-requirements
+
+custom:
+  settings:
+    BUCKET_NAME: aws-python-project-test-bucket
+    MAIL_TO: forename.surname@hotmail.com
+    TOPIC_NAME: AWSPythonProjectTopic
+    TOPIC_ARN: "arn:aws:sns:${self:provider.region}:*:${self:custom.settings.TOPIC_NAME}"
+
+provider:
+  name: aws
+  runtime: python3.8
+  profile: username
+  region: eu-central-1
+  environment: ${self:custom.settings}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+        - "s3:GetObject"
+        - "s3:PutObject"
+      Resource: "arn:aws:s3:::${self:custom.settings.BUCKET_NAME}/*"
+    - Effect: "Allow"
+      Action:
+        - "sns:Publish"
+      Resource: ${self:custom.settings.TOPIC_ARN}
+
+functions:
+  onS3Upload:
+    handler: handlers/s3uploadhandler.onS3Upload
+    events:
+      - s3:
+          bucket: ${self:custom.settings.BUCKET_NAME}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: uploads/
+            - suffix: .txt
+  onHTTPPostEvent:
+    handler: handlers/httphandler.onHTTPPostEvent
+    events:
+      - httpApi:
+          method: post
+          path: /produce
+    environment:
+      BUCKET_NAME: ${self:custom.settings.BUCKET_NAME}
+
+resources:
+  Resources:
+    MailNotification:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: "AWS Python Project Mail"
+        TopicName: ${self:custom.settings.TOPIC_NAME}
+        Subscription:
+          - Endpoint: ${self:custom.settings.MAIL_TO}
+            Protocol: "email"
+
