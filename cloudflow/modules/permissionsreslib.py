@@ -220,7 +220,7 @@ def analyse_resource_level_permissions(required_api_permissions,
             # CASE 2 - The value of the resource-related input argument
             # is retrieved from the API call positional arguments.
             try:
-                resource_input = api_call_ast_node.args[str(resource_pos_arg)]
+                resource_input = api_call_ast_node.args[int(resource_pos_arg)]
             except:
                 print(f'--- WARNING: No information extracted for {resource_id} ---')
                 # Since no information was extracted from the API call AST

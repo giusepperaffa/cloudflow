@@ -291,7 +291,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         """
         # Required permissions for the API are extracted from configuration dictionary
         required_permissions = set(self.config_dict[service][interf_obj_type + '_obj'][api_name]['permissions'])
-        # Resource-related information for the API are are extracted from configuration dictionary.
+        # Resource-related information for the API is extracted from configuration dictionary.
         resource_info = self.config_dict[service][interf_obj_type + '_obj'][api_name].get('resources')
         # Obtain handler name specified in the infrastructure code
         handler_name = self._get_handler_from_function(function_name)
