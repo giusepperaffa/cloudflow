@@ -11,6 +11,7 @@ from cloudflow.utils.customprintreslib import print_table
 from cloudflow.utils.awsarnprocessingreslib import AWSARNManagerCls
 from cloudflow.modules.customresolverreslib import resolve_value_from_yaml, check_if_resolved
 from cloudflow.modules.envinspectionreslib import inspect_ast_node
+from cloudflow.utils.astprocessingreslib import get_call_input_ast_node
 
 # =========
 # Functions
@@ -199,34 +200,25 @@ def analyse_resource_level_permissions(required_api_permissions,
     # ==============
     # Main algorithm
     # ==============
-    # Process all the resource-related API input arguments.
     print('--- Analysis of API resource-related input arguments is about to start... ---')
+    # Auxiliary set initialization. The following cycle stores a
+    # permission result for each resource-related input argument.
+    permission_results = set()
+    # Process all the resource-related API input arguments.
     for resource_dict in resources_info:
-        # Auxiliary set initialization. This cycle stores a permission
-        # result for each resource-related input argument.
-        permission_results = set()
         # Retrieve resource-related input argument name and position
         resource_id, resource_pos_arg = list(resource_dict.items())[0]
         # ==================================
         # PART 1 - Process API call AST node
         # ==================================
-        # Retrieve the value of the resource-related input argument
-        if resource_id in [keyword.arg for keyword in api_call_ast_node.keywords]:
-            # CASE 1 - The value of the resource-related input argument
-            # is retrieved from the API call keyword arguments.
-            resource_input = [keyword.value for keyword
-                              in api_call_ast_node.keywords if keyword.arg == resource_id][0]
-        else:
-            # CASE 2 - The value of the resource-related input argument
-            # is retrieved from the API call positional arguments.
-            try:
-                resource_input = api_call_ast_node.args[int(resource_pos_arg)]
-            except:
-                print(f'--- WARNING: No information extracted for {resource_id} ---')
-                # Since no information was extracted from the API call AST
-                # node, the next step of the cycle can restart without any
-                # further processing.
-                continue
+        resource_input = get_call_input_ast_node(api_call_ast_node,
+                                                 resource_id,
+                                                 resource_pos_arg)
+        if resource_input is None:
+            # Since no information was extracted from the API call AST
+            # node, the next step of the cycle can restart without any
+            # further processing.
+            continue
         # ======================================================
         # PART 2 - Process resource-related input argument value
         # ======================================================
