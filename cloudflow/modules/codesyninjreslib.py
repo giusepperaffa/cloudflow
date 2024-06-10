@@ -13,6 +13,7 @@ from typing import Optional, NamedTuple
 from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 from cloudflow.modules.eventobjmodelgenreslib import EventObjModelGeneratorCls
 from cloudflow.modules.permissionsreslib import analyse_api_permissions, analyse_resource_level_permissions
+from cloudflow.modules.eventfilteringreslib import analyse_event_filtering
 
 # =========
 # Functions
@@ -293,8 +294,16 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         required_permissions = set(self.config_dict[service][interf_obj_type + '_obj'][api_name]['permissions'])
         # Resource-related information for the API is extracted from configuration dictionary.
         resource_info = self.config_dict[service][interf_obj_type + '_obj'][api_name].get('resources')
+        # Event filtering-related information for the API is extracted from configuration dictionary.
+        event_filtering_info = self.config_dict[service][interf_obj_type + '_obj'][api_name].get('events_filtering')
         # Obtain handler name specified in the infrastructure code
         handler_name = self._get_handler_from_function(function_name)
+        # Service-specific permissions result
+        service_perm_res = analyse_api_permissions(required_permissions,
+                                                   self.perm_dict[service],
+                                                   service,
+                                                   self.plugin_info,
+                                                   handler_name)
         # Resource-level permissions result
         resource_level_perm_res = analyse_resource_level_permissions(required_permissions,
                                                                      self.perm_res_dict,
@@ -304,13 +313,14 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                                                                      self.infrastruc_code_dict,
                                                                      handler_name,
                                                                      self.sc_file)
-        # Service-specific permissions result
-        service_perm_res = analyse_api_permissions(required_permissions,
-                                                   self.perm_dict[service],
-                                                   service,
-                                                   self.plugin_info,
-                                                   handler_name)
-        return (service_perm_res and resource_level_perm_res)
+        # Event filtering result
+        event_filtering_res = analyse_event_filtering(service,
+                                                      event_filtering_info,
+                                                      api_call_ast_node,
+                                                      self.infrastruc_code_dict,
+                                                      handler_name,
+                                                      self.sc_file)
+        return (service_perm_res and resource_level_perm_res and event_filtering_res)
 
     # === Protected Method ===
     def _check_api_support(self,

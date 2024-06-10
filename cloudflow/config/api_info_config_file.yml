@@ -27,6 +27,8 @@ s3:
                 - ObjectCreated:*
             permissions:
                 - PutObject
+            events_filtering:
+                - Key: 2
     resource_obj:
         all:
             events:

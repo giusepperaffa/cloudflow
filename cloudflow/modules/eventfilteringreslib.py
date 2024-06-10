@@ -6,6 +6,7 @@ import ast
 # ========================================
 # Import Python Modules (Project-specific)
 # ========================================
+from cloudflow.utils.astprocessingreslib import get_call_input_ast_node
 
 # =========
 # Functions
@@ -76,7 +77,9 @@ def analyse_event_filtering(service_name,
         # ==================================
         # PART 1 - Process API call AST node
         # ==================================
-        ...
+        input_ast_node = get_call_input_ast_node(api_call_ast_node,
+                                                 input_id,
+                                                 input_pos_arg)
         if input_ast_node is None:
             # Since no information was extracted from the API call AST
             # node, the next step of the cycle can start without any
