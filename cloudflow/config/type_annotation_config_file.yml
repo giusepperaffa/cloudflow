@@ -17,3 +17,7 @@ sns:
     client_obj: SNSClient
     resource_obj: SNSServiceResource
     stub_module: mypy_boto3_sns
+
+athena:
+    client_obj: AthenaClient
+    stub_module: mypy_boto3_athena

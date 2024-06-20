@@ -105,3 +105,6 @@ sns:
                 - None
             permissions:
                 - Publish
+
+athena:
+    client_obj: None
