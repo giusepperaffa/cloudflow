@@ -136,6 +136,9 @@ class YAMLResolverCls:
                 # https://www.serverless.com/framework/docs/guides/parameters
                 if ',' in extracted_str:
                     extracted_str = extracted_str.split(',')[1].strip()
+                    if re.search('^(self:|opt:|env:)', extracted_str) is None:
+                        # The extracted string is detected as fully resolved.
+                        return extracted_str
                 # The following code handles the case where the extracted string
                 # contains in turn an unresolved part. A recursive call is used
                 # to fully resolve the extracted string.
