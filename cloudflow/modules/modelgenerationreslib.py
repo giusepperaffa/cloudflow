@@ -331,7 +331,9 @@ class ModelGenerationManagerCls:
             handler_path_info = self.infrastruc_code_dict['functions'][handler_name]['handler']
             handler_path_info = re.sub(r'^\./', '', handler_path_info)
             # Separate handler function name from the extracted path
-            handler_rel_path, handler_func = handler_path_info.split('.')
+            sep_path_reg_exp = re.compile(r'(?P<relpath>.*)\.(?P<handler>\w+)$')
+            handler_rel_path = sep_path_reg_exp.search(handler_path_info).group('relpath').replace('.', '/')
+            handler_func = sep_path_reg_exp.search(handler_path_info).group('handler')
             # Store extracted information
             self.sc_to_handlers_dict[os.path.join(infrastruc_code_file_folder,
                                                   handler_rel_path + '.py')].append(handler_func)
