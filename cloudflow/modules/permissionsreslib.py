@@ -361,14 +361,20 @@ class PermissionsIdentifierCls:
 
     # === Method ===
     def pretty_print_perm_dict(self):
-        for service in sorted(self.perm_dict):
-            print_table([[perm] for perm in sorted(self.perm_dict[service])], \
-                        ['Service ' + service])
+        if self.perm_dict != {}:
+            for service in sorted(self.perm_dict):
+                print_table([[perm] for perm in sorted(self.perm_dict[service])], \
+                            ['Service ' + service])
+        else:
+            print('--- WARNING: Empty permissions dictionary (provider-level) ---')
 
     # === Method ===
     def pretty_print_resources(self):
-        print_table([[resource] for resource in sorted(self.perm_res_dict)], \
-                    ['Resources'])
+        if self.perm_res_dict != {}:
+            print_table([[resource] for resource in sorted(self.perm_res_dict)], \
+                        ['Resources'])
+        else:
+            print('--- WARNING: Empty permissions-resources dictionary (provider-level) ---')
 
     # === Method ===
     def resolve_resources(self):
