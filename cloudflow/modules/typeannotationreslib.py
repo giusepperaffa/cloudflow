@@ -11,6 +11,7 @@ from typing import NamedTuple
 # Import Python Modules (Project Specific)
 # ========================================
 from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
+from cloudflow.utils.astprocessingreslib import check_file_syntax
 
 # =======
 # Classes
@@ -74,8 +75,8 @@ class TypeAnnotationManagerCls:
                         type_ann = self.config_dict[interf_record.service][interf_record.instance_type + '_obj']
                         # Create AST node with import statement
                         import_statement = ast.ImportFrom(module=stub_module,
-                                                        names=[ast.alias(name=type_ann, asname=None)],
-                                                        level=0)
+                                                          names=[ast.alias(name=type_ann, asname=None)],
+                                                          level=0)
                         # Add the new import statement as first line of processed file
                         tree.body.insert(0, import_statement)
                         # Add lineno & col_offset to the created node
@@ -120,7 +121,8 @@ class TypeAnnotationManagerCls:
         for root, dirs, files in os.walk(self.repo_full_path):
             for flt_file in (file for file in files
                              if os.path.splitext(file)[1] == extension):
-                yield os.path.join(root, flt_file)
+                if check_file_syntax(os.path.join(root, flt_file)):
+                    yield os.path.join(root, flt_file)
 
     # === Protected Method ===
     def _get_filtered_file(self, import_mode):

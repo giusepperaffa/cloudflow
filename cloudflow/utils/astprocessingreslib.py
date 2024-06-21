@@ -1,6 +1,31 @@
+# ========================================
+# Import Python Modules (Standard Library)
+# ========================================
+import ast
+
 # =========
 # Functions
 # =========
+def check_file_syntax(file_full_path):
+    """
+    Function that checks if the file specified as input
+    argument is a syntactically valid Python file. This
+    is achieved by trying to obtain the in-memory data
+    structure that stores its AST. The function returns
+    True if the check is successful, False otherwise.
+    Input arguments:
+    -) file_full_path: String specifying the full path
+    of the Python file to be checked.
+    """
+    try:
+        with open(file_full_path, mode='r') as file_obj:
+            tree = ast.parse(file_obj.read())
+        return True
+    except Exception as e:
+        print('--- Exception raised while checking file syntax for: ---')
+        print(f'--- {file_full_path} ---')
+        return False
+
 def get_call_input_ast_node(call_ast_node, input_id, input_pos_arg=None):
     """
     Function that processes an AST node of type Call to
