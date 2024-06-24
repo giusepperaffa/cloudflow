@@ -2,6 +2,7 @@
 # Import Python Modules (Standard Library)
 # ========================================
 from dataclasses import dataclass
+import re
 
 # =======
 # Classes
@@ -30,8 +31,29 @@ class AWSARNManagerCls:
         # Attribute initialization
         self.arn = arn
         self.arn_parts_num = arn_parts_num
+        # Sanitize user-provided ARN
+        self._sanitize_arn()
         # Validate user-provided ARN
         self._validate_arn()
+
+    # === Protected Method ===
+    def _sanitize_arn(self):
+        """
+        Method that sanitize the user-provided ARN. The main
+        objective of the method is to remove from the ARN
+        strings (or portions of strings) that cannot be
+        processed by the tool.
+        NOTE: Some strings have to be removed because their
+        processing is not currently supported, but they might
+        in future versions of the tool. To be reviewed.
+        """
+        # Regular expression that identifies the syntax used
+        # to specify AWS-specific parameters as shown in this
+        # example: #{AWS::Region}. The occurrence of '::' is
+        # removed, as this syntax is not currently supported,
+        # and it would prevent the validation of the ARN.
+        detect_param_reg_exp = re.compile(r'#\{(?P<provider>\w+)::(?P<parameter>\w+)\}')
+        self.arn = detect_param_reg_exp.sub(r'\g<provider>\g<parameter>', self.arn)
 
     # === Protected Method ===
     def _validate_arn(self):
