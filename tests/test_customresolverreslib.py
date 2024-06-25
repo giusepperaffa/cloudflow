@@ -79,11 +79,18 @@ def test_unresolved_resources(get_test_files_folder, test_value, expected_result
     assert expected_result == resolve_value_from_yaml(test_value, config_dict)
 
 @pytest.mark.parametrize('test_value, expected_result', [
+    ('${self:service}', 'StepFuncBatch')
+])
+def test_unresolved_values_no_nested(get_test_files_folder, test_value, expected_result):
+    config_dict = extract_dict_from_yaml(get_test_files_folder, 'serverless_unresolved_values_no_nested.yml')
+    assert expected_result == resolve_value_from_yaml(test_value, config_dict)
+
+@pytest.mark.parametrize('test_value, expected_result', [
     ('provider.region', True),
-    ('${provider.region}', False),
-    (['${provider.region}', 'provider.region'], False),
+    ('${self:provider.region}', False),
+    (['${self:provider.region}', 'provider.region'], False),
     (['provider.region', 'provider.region'], True),
-    (['${provider.region}', '${provider.region}'], False)
+    (['${self:provider.region}', '${self:provider.region}'], False)
 ])
 def test_check_if_resolved(test_value, expected_result):
     assert expected_result == check_if_resolved(test_value)
