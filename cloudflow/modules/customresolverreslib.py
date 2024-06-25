@@ -44,7 +44,7 @@ def resolve_value_from_yaml(unres_value, config_dict, max_recursion=10):
                     else:
                         res_value = res_value[key]
                 # Substitute specific substring with the resolved value
-                unres_value = re.sub(r'\$\{self:' + substring + '\}', res_value, unres_value)
+                unres_value = re.sub(r'\$\{self:' + substring + r'\}', res_value, unres_value)
             except KeyError as e:
                 print('--- Exception raised - The following dictionary key was not found: ---')
                 print(f'--- {e} ---')
@@ -153,7 +153,7 @@ class YAMLResolverCls:
                 # This cycle is needed because the unresolved value is specified
                 # by using '.' notation, but this cannot be used to traverse
                 # self.ref_dict, which is a standard dictionary.
-                for key in re.sub('^\$?\{?self:', '', extracted_str).split('.'):
+                for key in re.sub(r'^\$?\{?self:', '', extracted_str).split('.'):
                     # The dictionary method get is not used in the following
                     # code, as extracting None when a dictionary key is invalid
                     # breaks the yaml module parser.
