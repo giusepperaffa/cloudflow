@@ -21,3 +21,208 @@ sns:
 athena:
     client_obj: AthenaClient
     stub_module: mypy_boto3_athena
+
+acm:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+apigateway:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+batch:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+cloudformation:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+cloudtrail:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+cloudwatch:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+codebuild:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+codepipeline:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+cognito-idp:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+comprehend:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+ec2:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+ecs:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+efs:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+events:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+firehose:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+glue:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+iam:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+iot:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+iot-data:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+kinesis:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+kms:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+lambda:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+lex-models:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+lex-runtime:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+lightsail:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+logs:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+polly:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+quicksight:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+rds:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+rds-data:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+rekognition:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+resourcegroupstaggingapi:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+route53:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+sagemaker:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+secretsmanager:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+ses:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+ssm:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+stepfunctions:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+sts:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+support:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
+
+textract:
+    client_obj: None
+    resource_obj: None
+    stub_module: None
