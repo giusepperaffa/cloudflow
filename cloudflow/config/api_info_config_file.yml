@@ -5,16 +5,19 @@ s3:
                 - None
             permissions:
                 - ListObjects
+                - '*'
         list_objects_v2:
             events:
                 - None
             permissions:
                 - ListObjects
+                - '*'
         put_object:
             events:
                 - ObjectCreated:*
             permissions:
                 - PutObject
+                - '*'
         get_object:
             events:
                 - EventName1
@@ -27,6 +30,7 @@ s3:
                 - ObjectCreated:*
             permissions:
                 - PutObject
+                - '*'
             events_filtering:
                 - Key: 2
     resource_obj:
@@ -35,16 +39,19 @@ s3:
                 - None
             permissions:
                 - ListBucket
+                - '*'
         delete:
             events:
                 - None
             permissions:
                 - DeleteObject
+                - '*'
         put_object:
             events:
                 - ObjectCreated:*
             permissions:
                 - PutObject
+                - '*'
         get_object:
             events:
                 - EventName1
@@ -57,6 +64,7 @@ s3:
                 - ObjectCreated:*
             permissions:
                 - PutObject
+                - '*'
         
 dynamodb:
     client_obj:
@@ -65,6 +73,7 @@ dynamodb:
                 - stream
             permissions:
                 - PutItem
+                - '*'
             resources:
                 - TableName: None
         scan:
@@ -72,17 +81,20 @@ dynamodb:
                 - None
             permissions:
                 - Scan
+                - '*'
     resource_obj:
         put_item:
             events:
                 - stream
             permissions:
                 - PutItem
+                - '*'
         scan:
             events:
                 - None
             permissions:
                 - Scan
+                - '*'
 
 sqs:
     client_obj:
@@ -91,12 +103,14 @@ sqs:
                 - MessageSent
             permissions:
                 - SendMessage
+                - '*'
     resource_obj:
         send_message:
             events:
                 - MessageSent
             permissions:
                 - SendMessage
+                - '*'
 
 sns:
     client_obj:
@@ -105,6 +119,7 @@ sns:
                 - None
             permissions:
                 - Publish
+                - '*'
 
 athena:
     client_obj: None
