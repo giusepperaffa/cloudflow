@@ -126,15 +126,12 @@ athena:
 
 acm:
     client_obj: None
-    resource_obj: None
 
 apigateway:
     client_obj: None
-    resource_obj: None
 
 batch:
     client_obj: None
-    resource_obj: None
 
 cloudformation:
     client_obj: None
@@ -142,7 +139,6 @@ cloudformation:
 
 cloudtrail:
     client_obj: None
-    resource_obj: None
 
 cloudwatch:
     client_obj: None
@@ -150,19 +146,15 @@ cloudwatch:
 
 codebuild:
     client_obj: None
-    resource_obj: None
 
 codepipeline:
     client_obj: None
-    resource_obj: None
 
 cognito-idp:
     client_obj: None
-    resource_obj: None
 
 comprehend:
     client_obj: None
-    resource_obj: None
 
 ec2:
     client_obj: None
@@ -170,23 +162,18 @@ ec2:
 
 ecs:
     client_obj: None
-    resource_obj: None
 
 efs:
     client_obj: None
-    resource_obj: None
 
 events:
     client_obj: None
-    resource_obj: None
 
 firehose:
     client_obj: None
-    resource_obj: None
 
 glue:
     client_obj: None
-    resource_obj: None
 
 iam:
     client_obj: None
@@ -194,96 +181,72 @@ iam:
 
 iot:
     client_obj: None
-    resource_obj: None
 
 iot-data:
     client_obj: None
-    resource_obj: None
 
 kinesis:
     client_obj: None
-    resource_obj: None
 
 kms:
     client_obj: None
-    resource_obj: None
 
 lambda:
     client_obj: None
-    resource_obj: None
 
 lex-models:
     client_obj: None
-    resource_obj: None
 
 lex-runtime:
     client_obj: None
-    resource_obj: None
 
 lightsail:
     client_obj: None
-    resource_obj: None
 
 logs:
     client_obj: None
-    resource_obj: None
 
 polly:
     client_obj: None
-    resource_obj: None
 
 quicksight:
     client_obj: None
-    resource_obj: None
 
 rds:
     client_obj: None
-    resource_obj: None
 
 rds-data:
     client_obj: None
-    resource_obj: None
 
 rekognition:
     client_obj: None
-    resource_obj: None
 
 resourcegroupstaggingapi:
     client_obj: None
-    resource_obj: None
 
 route53:
     client_obj: None
-    resource_obj: None
 
 sagemaker:
     client_obj: None
-    resource_obj: None
 
 secretsmanager:
     client_obj: None
-    resource_obj: None
 
 ses:
     client_obj: None
-    resource_obj: None
 
 ssm:
     client_obj: None
-    resource_obj: None
 
 stepfunctions:
     client_obj: None
-    resource_obj: None
 
 sts:
     client_obj: None
-    resource_obj: None
 
 support:
     client_obj: None
-    resource_obj: None
 
 textract:
     client_obj: None
-    resource_obj: None

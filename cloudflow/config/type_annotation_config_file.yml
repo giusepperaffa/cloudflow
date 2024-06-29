@@ -23,206 +23,169 @@ athena:
     stub_module: mypy_boto3_athena
 
 acm:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: ACMClient
+    stub_module: mypy_boto3_acm
 
 apigateway:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: APIGatewayClient
+    stub_module: mypy_boto3_apigateway
 
 batch:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: BatchClient
+    stub_module: mypy_boto3_batch
 
 cloudformation:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: CloudFormationClient
+    resource_obj: CloudFormationServiceResource
+    stub_module: mypy_boto3_cloudformation
 
 cloudtrail:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: CloudTrailClient
+    stub_module: mypy_boto3_cloudtrail
 
 cloudwatch:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: CloudWatchClient
+    resource_obj: CloudWatchServiceResource
+    stub_module: mypy_boto3_cloudwatch
 
 codebuild:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: CodeBuildClient
+    stub_module: mypy_boto3_codebuild
 
 codepipeline:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: CodePipelineClient
+    stub_module: mypy_boto3_codepipeline
 
 cognito-idp:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: CognitoIdentityProviderClient
+    stub_module: mypy_boto3_cognito_idp
 
 comprehend:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: ComprehendClient
+    stub_module: mypy_boto3_comprehend
 
 ec2:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: EC2Client
+    resource_obj: EC2ServiceResource
+    stub_module: mypy_boto3_ec2
 
 ecs:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: ECSClient
+    stub_module: mypy_boto3_ecs
 
 efs:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: EFSClient
+    stub_module: mypy_boto3_efs
 
 events:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: EventBridgeClient
+    stub_module: mypy_boto3_events
 
 firehose:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: FirehoseClient
+    stub_module: mypy_boto3_firehose
 
 glue:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: GlueClient
+    stub_module: mypy_boto3_glue
 
 iam:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: IAMClient
+    resource_obj: IAMServiceResource
+    stub_module: mypy_boto3_iam
 
 iot:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: IoTClient
+    stub_module: mypy_boto3_iot
 
 iot-data:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: IoTDataPlaneClient
+    stub_module: mypy_boto3_iot_data
 
 kinesis:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: KinesisClient
+    stub_module: mypy_boto3_kinesis
 
 kms:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: KMSClient
+    stub_module: mypy_boto3_kms
 
 lambda:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: LambdaClient
+    stub_module: mypy_boto3_lambda
 
 lex-models:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: LexModelBuildingServiceClient
+    stub_module: mypy_boto3_lex_models
 
 lex-runtime:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: LexRuntimeServiceClient
+    stub_module: mypy_boto3_lex_runtime
 
 lightsail:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: LightsailClient
+    stub_module: mypy_boto3_lightsail
 
 logs:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: CloudWatchLogsClient
+    stub_module: mypy_boto3_logs
 
 polly:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: PollyClient
+    stub_module: mypy_boto3_polly
 
 quicksight:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: QuickSightClient
+    stub_module: mypy_boto3_quicksight
 
 rds:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: RDSClient
+    stub_module: mypy_boto3_rds
 
 rds-data:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: RDSDataServiceClient
+    stub_module: mypy_boto3_rds_data
 
 rekognition:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: RekognitionClient
+    stub_module: mypy_boto3_rekognition
 
 resourcegroupstaggingapi:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: ResourceGroupsTaggingAPIClient
+    stub_module: mypy_boto3_resourcegroupstaggingapi
 
 route53:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: Route53Client
+    stub_module: mypy_boto3_route53
 
 sagemaker:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: SageMakerClient
+    stub_module: mypy_boto3_sagemaker
 
 secretsmanager:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: SecretsManagerClient
+    stub_module: mypy_boto3_secretsmanager
 
 ses:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: SESClient
+    stub_module: mypy_boto3_ses
 
 ssm:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: SSMClient
+    stub_module: mypy_boto3_ssm
 
 stepfunctions:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: SFNClient
+    stub_module: mypy_boto3_stepfunctions
 
 sts:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: STSClient
+    stub_module: mypy_boto3_sts
 
 support:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: SupportClient
+    stub_module: mypy_boto3_support
 
 textract:
-    client_obj: None
-    resource_obj: None
-    stub_module: None
+    client_obj: TextractClient
+    stub_module: mypy_boto3_textract
