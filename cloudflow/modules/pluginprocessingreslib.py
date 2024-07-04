@@ -278,15 +278,18 @@ class PluginManagerCls:
         If a plugin detected in the configuration file is not
         supported, a warning message is printed. 
         """
-        for plugin in self.config_dict['plugins']:
-            try:
-                print(f'--- Processing plugin: {plugin} ---')
-                # Initialize plugin-specific model object
-                plugin_model_obj = self.plugin_models_dict[plugin](self.config_dict)
-                # Extract plugin-specific information
-                self.process_plugin(plugin_model_obj)                
-            except KeyError:
-                print(f'--- WARNING: Plugin {plugin} not supported ---')
+        try:
+            for plugin in self.config_dict['plugins']:
+                try:
+                    print(f'--- Processing plugin: {plugin} ---')
+                    # Initialize plugin-specific model object
+                    plugin_model_obj = self.plugin_models_dict[plugin](self.config_dict)
+                    # Extract plugin-specific information
+                    self.process_plugin(plugin_model_obj)
+                except KeyError:
+                    print(f'--- WARNING: Plugin {plugin} not supported ---')
+        except KeyError:
+            print('--- WARNING: No plugins information found in the YAML file ---')
 
     # === Method ===
     def process_plugin(self, plugin_model_obj):

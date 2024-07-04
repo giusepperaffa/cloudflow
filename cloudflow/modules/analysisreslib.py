@@ -2,6 +2,7 @@
 # Import Python Modules (Standard Library)
 # ========================================
 import os
+import traceback
 
 # ========================================
 # Import Python Modules (Project Specific)
@@ -200,6 +201,11 @@ class AnalysisManagerCls:
             except Exception as e:
                 print('--- Exception raised - Details: ---')
                 print(f'--- {e} ---')
+                print()
+                print('=============')
+                print('| Traceback |')
+                print('=============')
+                print(traceback.format_exc())
                 print('--- Analysis interrupted ---')
         else:
             print('--- Inconsistency detected - Analysis interrupted ---')
