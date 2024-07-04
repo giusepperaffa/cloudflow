@@ -17,6 +17,7 @@ from cloudflow.modules.modelgenerationreslib import ModelGenerationManagerCls
 from cloudflow.modules.pysaconfigexecreslib import PysaConfigManagerCls, PysaExecManagerCls
 from cloudflow.modules.postprocessingreslib import PostprocessingManagerCls
 from cloudflow.modules.pluginprocessingreslib import PluginManagerCls
+from cloudflow.modules.reportgenerationreslib import ReportManagerCls
 
 # =========
 # Functions
@@ -244,3 +245,8 @@ class AnalysisManagerCls:
         elif self.config_obj.microbenchmarks:
             print('--- Analysis mode: Microbenchmarks suite ---')
             self.analyse_microbenchmarks()
+        # Report generation
+        print()
+        self.report_manager = ReportManagerCls(self.folders_manager.tool_repo_folder,
+                                               self.folders_manager.report_files_folder)
+        self.report_manager.generate_summary_report()
