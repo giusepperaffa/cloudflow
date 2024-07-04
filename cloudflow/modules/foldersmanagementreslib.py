@@ -32,8 +32,8 @@ class FoldersManagerCls:
 
     # === Read-only Attribute ===
     @property
-    def repo_full_path(self):
-        return self._repo_full_path
+    def log_files_folder(self):
+        return self._log_files_folder
 
     # === Read-only Attribute ===
     @property
@@ -44,6 +44,16 @@ class FoldersManagerCls:
     @property
     def pysa_results_folder(self):
         return self._pysa_results_folder
+
+    # === Read-only Attribute ===
+    @property
+    def repo_full_path(self):
+        return self._repo_full_path
+
+    # === Read-only Attribute ===
+    @property
+    def report_files_folder(self):
+        return self._report_files_folder
 
     # === Protected Method ===
     def _copy_orig_repo(self):
@@ -107,6 +117,10 @@ class FoldersManagerCls:
         # The names of all the analysis folders begin with
         # the following id to facilitate their identification.
         self.analysis_folder_id = '-'.join([self.tool_name, 'analysis'])
+        # Folder where all the report files are stored
+        self.report_files_folder_id = '-'.join([self.tool_name, 'report-files'])
+        # Folder where all the log files are stored
+        self.log_files_folder_id = '-'.join([self.tool_name, 'log-files'])
 
     # === Method ===
     def create_folders_structure(self, orig_repo_full_path):
@@ -129,6 +143,35 @@ class FoldersManagerCls:
         self._create_pysa_results_folder()
 
     # === Method ===
+    def create_log_files_folder(self):
+        """
+        Method that creates the folder where all the log
+        files are stored.
+        """
+        self._log_files_folder = os.path.join(self.tool_repo_folder,
+                                              self.log_files_folder_id)
+        os.mkdir(self._log_files_folder)
+
+    # === Method ===
+    def create_report_files_folder(self):
+        """
+        Method that creates the folder where all the report
+        files are stored.
+        """
+        self._report_files_folder = os.path.join(self.tool_repo_folder,
+                                                 self.report_files_folder_id)
+        os.mkdir(self._report_files_folder)
+
+    # === Method ===
+    def delete_all_created_folders(self):
+        """
+        Method that deletes all the created folders.
+        """
+        self.delete_analysis_folders()
+        self.delete_log_files_folder()
+        self.delete_report_files_folder()
+
+    # === Method ===
     def delete_analysis_folders(self):
         """
         Method that deletes all the existing analysis folders.
@@ -136,3 +179,21 @@ class FoldersManagerCls:
         for folder in (elem for elem in os.listdir(self.tool_repo_folder)
                        if elem.startswith(self.analysis_folder_id)):
             shutil.rmtree(os.path.join(self.tool_repo_folder, folder))
+
+    # === Method ===
+    def delete_log_files_folder(self):
+        """
+        Method that deletes the folder where all the log
+        files are stored.
+        """
+        shutil.rmtree(os.path.join(self.tool_repo_folder, self.log_files_folder_id),
+                      ignore_errors=True)
+
+    # === Method ===
+    def delete_report_files_folder(self):
+        """
+        Method that deletes the folder where all the report
+        files are stored.
+        """
+        shutil.rmtree(os.path.join(self.tool_repo_folder, self.report_files_folder_id),
+                      ignore_errors=True)

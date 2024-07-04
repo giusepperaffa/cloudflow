@@ -230,7 +230,11 @@ class AnalysisManagerCls:
     def perform_analysis(self):
         print('--- CloudFlow analysis - Start ---')
         self.folders_manager = FoldersManagerCls()
-        self.folders_manager.delete_analysis_folders()
+        # Prepare execution by deleting all the created folders
+        self.folders_manager.delete_all_created_folders()
+        # Prepare execution by creating necessary folders
+        self.folders_manager.create_log_files_folder()
+        self.folders_manager.create_report_files_folder()
         if self.config_obj.single:
             print('--- Analysis mode: Single repository ---')
             self.analyse_repo(self.config_obj.single)
