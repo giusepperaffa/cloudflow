@@ -219,8 +219,8 @@ class AnalysisManagerCls:
         the folder specified as input parameter.
         """
         try:
-            for folder in (item for item in os.listdir(target_folder) if
-                           os.path.isdir(os.path.join(target_folder, item))):
+            for folder in sorted(item for item in os.listdir(target_folder)
+                                 if os.path.isdir(os.path.join(target_folder, item))):
                 print()
                 print(f'=== Start analysis of repository: {folder} ===')
                 self.analyse_repo(os.path.join(target_folder, folder))
@@ -246,6 +246,18 @@ class AnalysisManagerCls:
         """
         # Initialize folders manager object
         self.folders_manager = FoldersManagerCls()
+        # Handle tool execution in log processing mode
+        if self.config_obj.log_processing:
+            print('--- CloudFlow log processing - Start ---')
+            # The tool log processing relies on functionality
+            # provided by the LogRedirectionManager. Early
+            # return avoids executing initialization steps
+            # designed for other tool analysis modes.
+            log_files_folder = os.path.join(self.folders_manager.tool_repo_folder,
+                                            self.folders_manager.log_files_folder_id)
+            self.log_redirection_manager = LogRedirectionManager(log_files_folder)
+            self.log_redirection_manager.split_log_file()
+            return
         # Prepare execution by deleting all the created folders
         self.folders_manager.delete_all_created_folders()
         # Prepare execution by creating necessary folders

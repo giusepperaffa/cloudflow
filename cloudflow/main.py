@@ -22,6 +22,8 @@ def process_program_inputs():
     mode_group_parser_obj.add_argument('-mb', '--microbenchmarks', action='store', type=str, metavar='category', \
         help='Microbenchmarks Mode - The repositories within the microbenchmarks suite are analysed',
         choices=['all', 'inter-procedural', 'intra-procedural', 'simple-apps'])
+    mode_group_parser_obj.add_argument('-lp', '--log-processing', action='store_true', \
+        help='Log Processing Mode - Starts processing of tool log file')
     return parser_obj.parse_args()
 
 def main():

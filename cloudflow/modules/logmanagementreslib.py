@@ -120,10 +120,17 @@ class LogRedirectionManager:
                     # Store line of the repository-specific log file
                     repo_log_file_lines.append(line)
             else:
-                # After the end of the for cycle, create last repository-specific log file
-                self._create_repo_log_file(repo, repo_log_file_lines)
+                try:
+                    # Create last repository-specific log file at the end of
+                    # the for cycle. If the previous cycle does not find the
+                    # start of the log file for any repository, the following
+                    # statement raises an exception.
+                    self._create_repo_log_file(repo, repo_log_file_lines)
+                except:
+                    # No recovery action required
+                    pass
 
-class StreamToLogger(object):
+class StreamToLogger:
     """
     Fake file-like stream object that redirects writes
     to a logger instance.
