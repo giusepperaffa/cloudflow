@@ -18,6 +18,7 @@ from cloudflow.modules.pysaconfigexecreslib import PysaConfigManagerCls, PysaExe
 from cloudflow.modules.postprocessingreslib import PostprocessingManagerCls
 from cloudflow.modules.pluginprocessingreslib import PluginManagerCls
 from cloudflow.modules.reportgenerationreslib import ReportManagerCls
+from cloudflow.modules.logmanagementreslib import LogRedirectionManager
 
 # =========
 # Functions
@@ -228,14 +229,33 @@ class AnalysisManagerCls:
             print(f'--- {e} ---')
 
     # === Method ===
+    def create_report_files(self):
+        """
+        Method that creates the report files within a
+        dedicated folder.
+        """
+        print()
+        self.report_manager = ReportManagerCls(self.folders_manager.tool_repo_folder,
+                                               self.folders_manager.report_files_folder)
+        self.report_manager.generate_summary_report()
+
+    # === Method ===
     def perform_analysis(self):
-        print('--- CloudFlow analysis - Start ---')
+        """
+        Method that starts the analysis tool execution.
+        """
+        # Initialize folders manager object
         self.folders_manager = FoldersManagerCls()
         # Prepare execution by deleting all the created folders
         self.folders_manager.delete_all_created_folders()
         # Prepare execution by creating necessary folders
         self.folders_manager.create_log_files_folder()
         self.folders_manager.create_report_files_folder()
+        # Initialize log redirection manager object and
+        # activate stdout and stderr redirection.
+        self.log_redirection_manager = LogRedirectionManager(self.folders_manager.log_files_folder)
+        self.log_redirection_manager.activate_log_redirection()
+        print('--- CloudFlow analysis - Start ---')
         if self.config_obj.single:
             print('--- Analysis mode: Single repository ---')
             self.analyse_repo(self.config_obj.single)
@@ -246,7 +266,4 @@ class AnalysisManagerCls:
             print('--- Analysis mode: Microbenchmarks suite ---')
             self.analyse_microbenchmarks()
         # Report generation
-        print()
-        self.report_manager = ReportManagerCls(self.folders_manager.tool_repo_folder,
-                                               self.folders_manager.report_files_folder)
-        self.report_manager.generate_summary_report()
+        self.create_report_files()
