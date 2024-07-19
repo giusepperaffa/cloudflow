@@ -1,7 +1,6 @@
 # ========================================
 # Import Python Modules (Standard Library)
 # ========================================
-import ast
 import collections
 import os
 import re
@@ -11,6 +10,7 @@ import shutil
 # Import Python Modules (Project Specific)
 # ========================================
 from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
+from cloudflow.utils.astprocessingreslib import get_module_func_ast_nodes
 
 # =================
 # Module Parameters
@@ -102,14 +102,11 @@ class HandlerModelGeneratorBaseCls:
         if self.ss_type_list == []:
             raise NotImplementedError('--- Inconsistency detected - Missing initialization ---')
         print(f'--- Pysa model is being generated with class {self.__class__.__name__}... ---')
-        with open(self.model_file_fp, mode=self._get_file_mode()) as m_file,\
-            open(self.source_code, mode='r') as sc_file:
+        with open(self.model_file_fp, mode=self._get_file_mode()) as m_file:
             # Add comment to model file (readability)
             m_file.write('# Handler-related models' + '\n')
-            # Obtain Abstract Syntax Tree (AST) for source code
-            tree = ast.parse(sc_file.read())
-            # Processing of all the function definition nodes
-            for func_node in (node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)):
+            # Processing of all the module-level function definition nodes
+            for func_node in get_module_func_ast_nodes(self.source_code):
                 # Functions for which no model is required are filtered out
                 if func_node.name in self.handlers_list:
                     for ss_type in self.ss_type_list:
