@@ -19,6 +19,7 @@ from cloudflow.modules.postprocessingreslib import PostprocessingManagerCls
 from cloudflow.modules.pluginprocessingreslib import PluginManagerCls
 from cloudflow.modules.reportgenerationreslib import ReportManagerCls
 from cloudflow.modules.logmanagementreslib import LogRedirectionManager
+from cloudflow.modules.toolconfigreslib import ToolConfigManagerCls
 
 # =========
 # Functions
@@ -178,6 +179,9 @@ class AnalysisManagerCls:
         for the CloudFlow tool. The code in this method is
         designed to analyse one repository only.
         """
+        # Instantiate class that handles the configuration file used by the tool
+        print('--- Tool configuration file is being processed... ---')
+        self.tool_config_manager = ToolConfigManagerCls(self.config_obj.config_file)
         # Instantiate class that handles the folder structure used by the tool
         print('--- Folder structure is being created... ---')
         self.folders_manager.create_folders_structure(repo_full_path)

@@ -24,6 +24,9 @@ def process_program_inputs():
         choices=['all', 'inter-procedural', 'intra-procedural', 'simple-apps'])
     mode_group_parser_obj.add_argument('-lp', '--log-processing', action='store_true', \
         help='Log Processing Mode - Starts processing of tool log file')
+    config_group_parser_obj = parser_obj.add_mutually_exclusive_group(required=False)
+    config_group_parser_obj.add_argument('-cf', '--config-file', action='store', type=str, metavar='config_file', \
+        help='Configuration File - Configuration file name (optional)')
     return parser_obj.parse_args()
 
 def main():
