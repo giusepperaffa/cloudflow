@@ -1,0 +1,79 @@
+002AA_covid-projections_covid-data-model:
+    model-generation:
+        package-mode: True
+
+008AA_epsagon_epsagon-python:
+    model-generation:
+        package-mode: True
+
+025AA_HackRU_lcs:
+    model-generation:
+        package-mode: True
+
+028AA_schmidtbri_lambda-ml-model-deployment:
+    model-generation:
+        package-mode: True
+
+029AA_zhammer_playlist-souffle:
+    model-generation:
+        package-mode: True
+
+031AA_brazil-data-cube_cube-builder-aws:
+    model-generation:
+        package-mode: True
+
+032AA_paulharte_autobrew:
+    model-generation:
+        package-mode: True
+
+036AA_keithrozario_Gov-TLS-Audit:
+    model-generation:
+        package-mode: True
+
+053AA_demidov91_belarusbank:
+    model-generation:
+        package-mode: True
+
+054AA_ohyeahjoe_apcompsciproject:
+    model-generation:
+        package-mode: True
+
+061AA_vincentclaes_serverless_crypto_analysis:
+    model-generation:
+        package-mode: True
+
+063AA_halprin_retrospective:
+    model-generation:
+        package-mode: True
+
+070AA_Gilbertly_kickoffai-sls-dataml:
+    model-generation:
+        package-mode: True
+
+073AA_the-deep_serverless:
+    model-generation:
+        package-mode: True
+
+099AA_zhammer_adventure-anywhere:
+    model-generation:
+        package-mode: True
+
+117AA_KevinJMcGarry_cloudwatch_notifier:
+    model-generation:
+        package-mode: True
+
+128AA_carlosonunez_tripit-apis:
+    model-generation:
+        package-mode: True
+
+129AA_nicolaszein_auth:
+    model-generation:
+        package-mode: True
+
+140AA_mawinkler_c1-app-sec-insekurestore:
+    model-generation:
+        package-mode: True
+
+144AA_phouse512_piper:
+    model-generation:
+        package-mode: True
