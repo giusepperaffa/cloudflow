@@ -20,14 +20,18 @@ class PysaConfigManagerCls:
     configuration file.
     """
     # === Constructor ===
-    def __init__(self, folders_manager):
+    def __init__(self, folders_manager, tool_config_manager):
         """
         Class constructor. Input arguments:
         -) folders_manager: Instance of folders manager
-        object created with the tool's dedicated module
+        object created with the tool's dedicated module.
+        -) tool_config_manager: Instance of the tool
+        configuration manager. See documentation of tool
+        module toolconfigreslib.
         """
         # Attribute initialization
         self.folders_manager = folders_manager
+        self.tool_config_manager = tool_config_manager
         self.virtual_env = self._get_virtual_env()
         self.pysa_config_dict = dict()
         # Auxiliary methods execution
@@ -49,6 +53,7 @@ class PysaConfigManagerCls:
         """
         self.pysa_config_dict['source_directories'] = \
             [item for item in self._get_rel_paths(self.get_source_folders())]
+        self._insert_top_level_repo_folder()
 
     # === Protected Method ===
     def _add_search_path(self,
@@ -98,6 +103,21 @@ class PysaConfigManagerCls:
         """
         return [full_path.replace(self.folders_manager.analysis_folder, '.')
                 for full_path in full_paths_list]
+
+    # === Protected Method ===
+    def _insert_top_level_repo_folder(self):
+        """
+        Method that adds the top level repository folder
+        to the source directories, if required by the
+        tool configuration.
+        """
+        # Extract name of the analysed repository
+        repo_name = os.path.basename(self.folders_manager.repo_full_path)
+        # Extract top level repo folder (relative path)
+        top_level_repo_folder = self._get_rel_paths([self.folders_manager.repo_full_path])[0]
+        if all([top_level_repo_folder not in self.pysa_config_dict['source_directories'],
+                self.tool_config_manager.get_package_mode(repo_name)]):
+            self.pysa_config_dict['source_directories'].insert(0, top_level_repo_folder)
 
     # === Protected Method ===
     def _get_virtual_env(self):

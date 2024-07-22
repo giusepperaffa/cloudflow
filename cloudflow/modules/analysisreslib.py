@@ -110,7 +110,8 @@ class AnalysisManagerCls:
         """
         # Instantiate class that generates Pysa configuration file
         print('--- Pysa configuration file is about to be generated... ---')
-        pysa_config_manager = PysaConfigManagerCls(self.folders_manager)
+        pysa_config_manager = PysaConfigManagerCls(self.folders_manager,
+                                                   self.tool_config_manager)
         pysa_config_manager.generate_config_file()
         # Instantiate class that generates Pysa models
         print('--- Pysa models are about to be generated... ---')
