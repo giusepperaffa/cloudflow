@@ -27,28 +27,37 @@ sink_types = ['Test']
 # =======
 class HandlerModelGeneratorBaseCls:
     """
-    Base class dedicated to the generation of  handler-related
+    Base class dedicated to the generation of handler-related
     models. NOTE: this class should not be directly instantiated,
     as its functionality is designed to be used in derived classes.
     """
     # === Constructor ===
-    def __init__(self, handlers_list, source_code, model_folder, \
-                model_file='models.pysa'):
+    def __init__(self,
+                 handlers_list,
+                 source_code,
+                 folders_manager,
+                 tool_config_manager,
+                 model_file='models.pysa'):
         """
         The constructor expects the following input arguments:
         -) handlers_list: List of strings specifying the handlers
         for which a model is required.
         -) source_code: Full path of the source code file where
         the handlers to be processed are stored.
-        -) model_folder: Full path of the folder where the model
-        file will be generated.
+        -) folders_manager: Instance of the folders manager
+        class. See tool module foldersmanagementreslib.
+        -) tool_config_manager: Instance of the tool configuration
+        manager. See tool module toolconfigreslib.
         -) model_file: Name of the model file. Default: models.pysa
         """
+        # Attribute initialization
         self.handlers_list = handlers_list
         self.source_code = source_code
-        self.model_folder = model_folder
+        self.folders_manager = folders_manager
+        self.tool_config_manager = tool_config_manager
         self.model_file = model_file
         # The model file full path (fp) is stored in an instance variable
+        self.model_folder = self.folders_manager.pysa_models_folder
         self.model_file_fp = os.path.join(self.model_folder, self.model_file)
         # List to be initialized with a child class
         self.ss_type_list = []
@@ -58,16 +67,27 @@ class HandlerModelGeneratorBaseCls:
         """
         Method that creates the model and returns it as a string.
         """
-        module_name = os.path.splitext(os.path.basename(self.source_code))[0]
         func_name = ast_node.name
         # Fully qualified names are needed by Pysa
-        qual_name = module_name + '.' + func_name
+        qual_name = self._get_fully_qualified_module_name() + '.' + func_name
         # The first input argument of the processed function is processed
         # to add Pysa-specific information
         func_input = ast_node.args.args[0].arg
         func_input += ': ' + self._get_analysis_tool_annotation(source_sink_type)
         func_input = '(' + func_input + '):'
         return ' '.join(['def', qual_name + func_input, str('...')])
+
+    # === Protected Method ===
+    def _get_analysis_tool_annotation(self, source_sink_type):
+        """
+        Method that obtains the annotation-like information
+        necessary for the model. NOTE: the code extracts this
+        information by processing the class name.
+        """
+        # Regular expression used to process the class name (cn)
+        cn_proc_reg_exp = re.compile(r'([A-Z][a-z]+)')
+        cn_proc = cn_proc_reg_exp.findall(self.__class__.__name__)[1]
+        return 'Taint' + cn_proc + '[' + source_sink_type + ']'
 
     # === Protected Method ===
     def _get_file_mode(self):
@@ -82,16 +102,30 @@ class HandlerModelGeneratorBaseCls:
             return 'w'
 
     # === Protected Method ===
-    def _get_analysis_tool_annotation(self, source_sink_type):
+    def _get_fully_qualified_module_name(self):
         """
-        Method that obtains the annotation-like information
-        necessary for the model. NOTE: the code extracts this
-        information by processing the class name.
+        Method that returns the fully qualified module name
+        to be used in the model.
         """
-        # Regular expression used to process the class name (cn)
-        cn_proc_reg_exp = re.compile(r'([A-Z][a-z]+)')
-        cn_proc = cn_proc_reg_exp.findall(self.__class__.__name__)[1]
-        return 'Taint' + cn_proc + '[' + source_sink_type + ']'
+        # Extract name of the analysed repository
+        repo_name = os.path.basename(self.folders_manager.repo_full_path)
+        # The fully qualified module name depends upon
+        # the tool configuration.
+        if self.tool_config_manager.get_package_mode(repo_name):
+            # ----------------------------------------------
+            # Case 1: The fully qualified module name starts
+            # from the repository folder within the analysis
+            # folder.
+            # ----------------------------------------------
+            module_name = re.sub(self.folders_manager.repo_full_path + os.sep,
+                                 '',
+                                 os.path.splitext(self.source_code)[0]).replace('/', '.')
+        else:
+            # ------------------------------------------
+            # Case 2: Only the module name is considered
+            # ------------------------------------------
+            module_name = os.path.splitext(os.path.basename(self.source_code))[0]
+        return module_name
 
     # === Public Method ===
     def generate_models(self):
@@ -147,9 +181,10 @@ class ModelGenerationManagerCls:
                  handlers_dict,
                  infrastruc_code_dict,
                  infrastruc_code_file,
-                 model_folder,
+                 folders_manager,
                  perm_dict,
-                 plugin_info):
+                 plugin_info,
+                 tool_config_manager):
         """
         Class constructor. Input arguments:
         -) handlers_dict: Data structure initialized within
@@ -157,20 +192,25 @@ class ModelGenerationManagerCls:
         -) infrastruc_code_dict: Data structure initialized
         within the module analysisreslib.
         -) infrastruc_code_file: Full path of the YAML file.
-        -) model_folder: String containing the full path of
-        the folder where the Pysa models have to be stored.
+        -) folders_manager: Instance of the folders manager
+        class. See tool module foldersmanagementreslib.
         -) perm_dict: Data structure containing information
         on permissions provided by module permissionsreslib.
         -) plugin_info: Data structure containing information
         on plugins provided by module pluginprocessingreslib.
+        -) tool_config_manager: Instance of the configuration
+        manager. See tool module toolconfigreslib.
         """
         # Attribute initialization
         self.handlers_dict = handlers_dict
         self.infrastruc_code_dict = infrastruc_code_dict
         self.infrastruc_code_file = infrastruc_code_file
-        self.model_folder = model_folder
+        self.folders_manager = folders_manager
         self.perm_dict = perm_dict
         self.plugin_info = plugin_info
+        self.tool_config_manager = tool_config_manager
+        # Auxiliary attribute initialization
+        self.model_folder = self.folders_manager.pysa_models_folder
         # Auxiliary methods execution
         self.init_model_gen_cls_list()
         self.init_sc_to_handlers_dict()
@@ -281,7 +321,8 @@ class ModelGenerationManagerCls:
                     # Instantiation of model generator object
                     model_generator = model_gen_cls(handlers_list,
                                                     sc_file,
-                                                    self.model_folder)
+                                                    self.folders_manager,
+                                                    self.tool_config_manager)
                     # Generation of Pysa models with dedicated method
                     model_generator.generate_models()
                 except Exception as e:
