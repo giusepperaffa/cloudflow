@@ -77,15 +77,22 @@ class ReportManagerCls:
                 results_folder_files = set(os.listdir(results_folder_full_path))
                 # Extract analysed repository name
                 repo_id = self.repo_id_reg_exp.sub('', analysis_folder)
+                # Initialize line to be written in case of error
+                # when processing the Pysa results.
+                error_row = {'Repository': repo_id, 'Analysis': 'Error', 'Individual Data Flows': 'N/A'}
                 # Process Pysa results 
                 if self.successful_analysis_files & results_folder_files == self.successful_analysis_files:
-                    with open(os.path.join(results_folder_full_path,
-                                           self.results_file), mode='r') as results_file_obj:
-                        # Initialize CSV file reader
-                        csv_reader = csv.DictReader(results_file_obj)
-                        data_flows_number =  len([row['Issue'] for row in csv_reader])
-                    # Add row to the summary report
-                    csv_writer.writerow({'Repository': repo_id, 'Analysis': 'Completed', 'Individual Data Flows': data_flows_number})
+                    try:
+                        with open(os.path.join(results_folder_full_path,
+                                               self.results_file), mode='r') as results_file_obj:
+                            # Initialize CSV file reader
+                            csv_reader = csv.DictReader(results_file_obj)
+                            data_flows_number =  len([row['Issue'] for row in csv_reader])
+                        # Add row to the summary report
+                        csv_writer.writerow({'Repository': repo_id, 'Analysis': 'Completed', 'Individual Data Flows': data_flows_number})
+                    except:
+                        # Add row to the summary report
+                        csv_writer.writerow(error_row)
                 else:
                     # Add row to the summary report
-                    csv_writer.writerow({'Repository': repo_id, 'Analysis': 'Error', 'Individual Data Flows': 'N/A'})
+                    csv_writer.writerow(error_row)
