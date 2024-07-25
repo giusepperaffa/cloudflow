@@ -9,7 +9,7 @@ import sys
 # =======
 # Classes
 # =======
-class LogRedirectionManager:
+class LogRedirectionManagerCls:
     # === Constructor ===
     def __init__(self,
                  log_files_folder):

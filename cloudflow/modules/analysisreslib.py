@@ -18,7 +18,7 @@ from cloudflow.modules.pysaconfigexecreslib import PysaConfigManagerCls, PysaExe
 from cloudflow.modules.postprocessingreslib import PostprocessingManagerCls
 from cloudflow.modules.pluginprocessingreslib import PluginManagerCls
 from cloudflow.modules.reportgenerationreslib import ReportManagerCls
-from cloudflow.modules.logmanagementreslib import LogRedirectionManager
+from cloudflow.modules.logmanagementreslib import LogRedirectionManagerCls
 from cloudflow.modules.toolconfigreslib import ToolConfigManagerCls
 
 # =========
@@ -256,12 +256,12 @@ class AnalysisManagerCls:
         if self.config_obj.log_processing:
             print('--- CloudFlow log processing - Start ---')
             # The tool log processing relies on functionality
-            # provided by the LogRedirectionManager. Early
+            # provided by the LogRedirectionManagerCls. Early
             # return avoids executing initialization steps
             # designed for other tool analysis modes.
             log_files_folder = os.path.join(self.folders_manager.tool_repo_folder,
                                             self.folders_manager.log_files_folder_id)
-            self.log_redirection_manager = LogRedirectionManager(log_files_folder)
+            self.log_redirection_manager = LogRedirectionManagerCls(log_files_folder)
             self.log_redirection_manager.split_log_file()
             return
         # Prepare execution by deleting all the created folders
@@ -271,7 +271,7 @@ class AnalysisManagerCls:
         self.folders_manager.create_report_files_folder()
         # Initialize log redirection manager object and
         # activate stdout and stderr redirection.
-        self.log_redirection_manager = LogRedirectionManager(self.folders_manager.log_files_folder)
+        self.log_redirection_manager = LogRedirectionManagerCls(self.folders_manager.log_files_folder)
         self.log_redirection_manager.activate_log_redirection()
         print('--- CloudFlow analysis - Start ---')
         if self.config_obj.single:
