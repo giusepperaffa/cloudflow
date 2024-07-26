@@ -134,6 +134,9 @@ acm:
 apigateway:
     client_obj: None
 
+apigatewaymanagementapi:
+    client_obj: None
+
 batch:
     client_obj: None
 
@@ -168,6 +171,12 @@ ecs:
     client_obj: None
 
 efs:
+    client_obj: None
+
+elb:
+    client_obj: None
+
+elbv2:
     client_obj: None
 
 events:
@@ -208,6 +217,9 @@ lightsail:
     client_obj: None
 
 logs:
+    client_obj: None
+
+mediaconvert:
     client_obj: None
 
 polly:

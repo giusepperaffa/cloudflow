@@ -30,6 +30,10 @@ apigateway:
     client_obj: APIGatewayClient
     stub_module: mypy_boto3_apigateway
 
+apigatewaymanagementapi:
+    client_obj: ApiGatewayManagementApiClient
+    stub_module: mypy_boto3_apigatewaymanagementapi
+
 batch:
     client_obj: BatchClient
     stub_module: mypy_boto3_batch
@@ -76,6 +80,14 @@ ecs:
 efs:
     client_obj: EFSClient
     stub_module: mypy_boto3_efs
+
+elb:
+    client_obj: ElasticLoadBalancingClient
+    stub_module: mypy_boto3_elb
+
+elbv2:
+    client_obj: ElasticLoadBalancingv2Client
+    stub_module: mypy_boto3_elbv2
 
 events:
     client_obj: EventBridgeClient
@@ -129,6 +141,10 @@ lightsail:
 logs:
     client_obj: CloudWatchLogsClient
     stub_module: mypy_boto3_logs
+
+mediaconvert:
+    client_obj: MediaConvertClient
+    stub_module: mypy_boto3_mediaconvert
 
 polly:
     client_obj: PollyClient
