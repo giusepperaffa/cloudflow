@@ -496,25 +496,29 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         # to ensure that the synthesized code is added after the
         # relevant API call.
         counter = 1
-        for i, child in enumerate(body[:]):
-            self.__api_to_process = None
-            # The method pre_Call is automatically called when the
-            # method walk, provided by the base class, is executed.
-            self.walk(child)
-            if self.__api_to_process is not None:
-                for event_obj_init_stmt, syn_handler_call in self._get_syn_code(self.interf_record.service,
-                                                                                self.interf_record.instance_type,
-                                                                                self.__api_to_process,
-                                                                                self.interm_interf_record_set):
-                    if all([event_obj_init_stmt is not None, syn_handler_call is not None]):
-                        # Inject synthesized code with initialization of event object
-                        body.insert(i + counter, event_obj_init_stmt)
-                        # Increment auxiliary counter
-                        counter += 1
-                        # Inject synthesized code with handler call
-                        body.insert(i + counter, syn_handler_call)
-                        # Increment auxiliary counter
-                        counter += 1
+        try:
+            for i, child in enumerate(body[:]):
+                self.__api_to_process = None
+                # The method pre_Call is automatically called when the
+                # method walk, provided by the base class, is executed.
+                self.walk(child)
+                if self.__api_to_process is not None:
+                    for event_obj_init_stmt, syn_handler_call in self._get_syn_code(self.interf_record.service,
+                                                                                    self.interf_record.instance_type,
+                                                                                    self.__api_to_process,
+                                                                                    self.interm_interf_record_set):
+                        if all([event_obj_init_stmt is not None, syn_handler_call is not None]):
+                            # Inject synthesized code with initialization of event object
+                            body.insert(i + counter, event_obj_init_stmt)
+                            # Increment auxiliary counter
+                            counter += 1
+                            # Inject synthesized code with handler call
+                            body.insert(i + counter, syn_handler_call)
+                            # Increment auxiliary counter
+                            counter += 1
+        except Exception as e:
+            print(f'--- WARNING: AST node of type {type(body)} not processed - Details: ---')
+            print(f'--- {e} ---')
         self.__api_to_process = None
         return True
 
