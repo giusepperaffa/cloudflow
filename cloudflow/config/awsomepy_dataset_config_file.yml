@@ -6,7 +6,15 @@
     model-generation:
         package-mode: True
 
+013AA_base2Services_shelvery-aws-backups:
+    model-generation:
+        package-mode: True
+
 025AA_HackRU_lcs:
+    model-generation:
+        package-mode: True
+
+026AA_antessio_dynamoplus:
     model-generation:
         package-mode: True
 
@@ -30,11 +38,23 @@
     model-generation:
         package-mode: True
 
+040AA_caffeinetv_snappy:
+    model-generation:
+        package-mode: True
+
+047AA_harveyrendell_strava-reporter:
+    model-generation:
+        package-mode: True
+
 053AA_demidov91_belarusbank:
     model-generation:
         package-mode: True
 
 054AA_ohyeahjoe_apcompsciproject:
+    model-generation:
+        package-mode: True
+
+056AA_mcliff1_SignalBot:
     model-generation:
         package-mode: True
 
@@ -54,7 +74,27 @@
     model-generation:
         package-mode: True
 
+077AA_claudijd_ssh_observatory:
+    model-generation:
+        package-mode: True
+
+094AA_hprutvisagar_aws-pricing-tools:
+    model-generation:
+        package-mode: True
+
 099AA_zhammer_adventure-anywhere:
+    model-generation:
+        package-mode: True
+
+101AA_mruston0_albumshuffler:
+    model-generation:
+        package-mode: True
+
+104AA_knowit_Dataplattform-old:
+    model-generation:
+        package-mode: True
+
+115AA_dthompson989_rancor-py-beta:
     model-generation:
         package-mode: True
 
