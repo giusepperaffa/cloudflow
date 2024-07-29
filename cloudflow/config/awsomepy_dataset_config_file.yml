@@ -10,6 +10,10 @@
     model-generation:
         package-mode: True
 
+022AA_mozilla_subhub:
+    model-generation:
+        package-mode: True
+
 025AA_HackRU_lcs:
     model-generation:
         package-mode: True
@@ -51,6 +55,10 @@
         package-mode: True
 
 054AA_ohyeahjoe_apcompsciproject:
+    model-generation:
+        package-mode: True
+
+055AA_revmischa_sls-flask-pre:
     model-generation:
         package-mode: True
 
