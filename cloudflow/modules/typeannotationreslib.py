@@ -112,6 +112,24 @@ class TypeAnnotationManagerCls:
                 sc_file_obj.write(astor.to_source(tree)) 
 
     # === Protected Method ===
+    def _extract_service(self, call_ast_node):
+        """
+        Method that extracts the cloud service used through
+        the interface provided by the boto3 module from the
+        the AST call node. The code supports the extraction
+        from the relevant keyword or positional argument,
+        and returns the extracted service as a string.
+        """
+        try:
+            # Extract service from call node keyword arguments
+            service_kw_arg = [kw_arg for kw_arg in call_ast_node.keywords
+                              if kw_arg.arg == 'service_name'][0]
+            return service_kw_arg.value.value
+        except:
+            # Extract service from call node positional arguments
+            return call_ast_node.args[0].value
+
+    # === Protected Method ===
     def _get_file_from_repo(self, extension='.py'):
         """
         Method that implements a generator yielding the
@@ -243,7 +261,7 @@ class TypeAnnotationManagerCls:
                                                                    node.targets[0].id,
                                                                    self._get_interf_obj_instance_type(import_mode,
                                                                                                       call_node),
-                                                                   call_node.args[0].value)
+                                                                   self._extract_service(call_node))
                                 # Update interface object dictionary
                                 self.interf_objs_dict[import_mode][file_full_path].append(interf_record)
                             except AttributeError:
