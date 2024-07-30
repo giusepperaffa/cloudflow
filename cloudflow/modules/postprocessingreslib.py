@@ -59,6 +59,9 @@ class PostprocessingManagerCls:
                             'Sink Line',
                             'Code',
                             'Message']
+        # String to be printed or saved to file in case
+        # of missing information in the SAPP database.
+        self._missing_info_msg = 'Missing information'
         # Results dictionary init
         self.results_dict = collections.defaultdict(dict)
 
@@ -111,8 +114,8 @@ class PostprocessingManagerCls:
             # of the results dictionary.
             for issue_number in sorted(self.results_dict):
                 row_dict = {self._fieldnames[0]: issue_number}
-                row_dict.update({elem: self.results_dict[issue_number][elem.lower()] for elem
-                                 in self._fieldnames[1:]})
+                row_dict.update({elem: self.results_dict[issue_number].get(elem.lower(), self._missing_info_msg)
+                                 for elem in self._fieldnames[1:]})
                 writer.writerow(row_dict)
 
     # === Protected Method ===
@@ -224,7 +227,7 @@ class PostprocessingManagerCls:
         for issue_number in sorted(self.results_dict):
             table_contents = [[self._fieldnames[0], issue_number]]
             for field in self._fieldnames[1:5]:
-                table_contents.append([field, self.results_dict[issue_number][field.lower()]])
+                table_contents.append([field, self.results_dict[issue_number].get(field.lower(), self._missing_info_msg)])
             print_table(table_contents, column_headers)
 
     # === Protected Method ===
@@ -248,8 +251,8 @@ class PostprocessingManagerCls:
         issue_reg_exp = re.compile(r'^Set issue to (\d+)\.$')
         code_reg_exp = re.compile(r'\bCode:.*?(\d+)\\n')
         message_reg_exp = re.compile(r'\bMessage:(.*?)\\n')
-        source_reg_exp = re.compile(r'\bsource(.*):(\d+)\|\d+\|\d+$')
-        sink_reg_exp = re.compile(r'\bsink(.*):(\d+)\|\d+\|\d+$')
+        source_reg_exp = re.compile(r'\ssource(.*):(\d+)\|\d+\|\d+$')
+        sink_reg_exp = re.compile(r'\ssink(.*):(\d+)\|\d+\|\d+$')
         for line in self._tool_execution.stdout.split('\n'):
             try:
                 if issue_reg_exp.search(line) is not None:
