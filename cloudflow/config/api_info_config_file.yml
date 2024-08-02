@@ -7,6 +7,8 @@ s3:
                 - ListObjects
                 - List*
                 - '*'
+            resources:
+                - Bucket: None
         list_objects_v2:
             events:
                 - None
@@ -14,12 +16,16 @@ s3:
                 - ListObjects
                 - List*
                 - '*'
+            resources:
+                - Bucket: None
         put_object:
             events:
                 - ObjectCreated:*
             permissions:
                 - PutObject
                 - '*'
+            resources:
+                - Bucket: None
         get_object:
             events:
                 - EventName1
@@ -33,6 +39,8 @@ s3:
             permissions:
                 - PutObject
                 - '*'
+            resources:
+                - Bucket: 1
             events_filtering:
                 - Key: 2
     resource_obj:
@@ -85,6 +93,8 @@ dynamodb:
             permissions:
                 - Scan
                 - '*'
+            resources:
+                - TableName: None
     resource_obj:
         put_item:
             events:
@@ -107,6 +117,8 @@ sqs:
             permissions:
                 - SendMessage
                 - '*'
+            resources:
+                - QueueUrl: None
     resource_obj:
         send_message:
             events:
@@ -124,6 +136,8 @@ sns:
                 - Publish
                 - Publish*
                 - '*'
+            resources:
+                - TopicArn: None
 
 athena:
     client_obj: None
