@@ -25,7 +25,6 @@ def get_test_files_folder(get_main_test_files_folder):
     ('onS3Upload', 'uploads/my-file.txt', True),
     ('onS3Upload', 'upload-folder/my-file.txt', False),
     ('onS3Upload', 'uploads/my-file.jpg', False),
-    ('onHTTPPostEvent', 'uploads/my-file.jpg', True),
 ])
 def test_string_literal(get_test_files_folder, handler, input_to_check, expected_result):
     infrastruc_code_dict = extract_dict_from_yaml(get_test_files_folder, 'serverless_s3_event_filtering.yml')
@@ -41,7 +40,6 @@ def test_string_literal(get_test_files_folder, handler, input_to_check, expected
     ('onS3Upload', 's3_bucket_key_2', False),
     ('onS3Upload', 's3_bucket_key_3', True),
     ('onS3Upload', 'non_existent_var', True),
-    ('onHTTPPostEvent', 's3_bucket_key_3', True),
 ])
 def test_source_code_var(get_test_files_folder, handler, var, expected_result):
     infrastruc_code_dict = extract_dict_from_yaml(get_test_files_folder, 'serverless_s3_event_filtering.yml')

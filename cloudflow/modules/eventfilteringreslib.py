@@ -15,7 +15,7 @@ def analyse_event_filtering(service_name,
                             event_filtering_info,
                             api_call_ast_node,
                             infrastruc_code_dict,
-                            handler_name,
+                            triggered_handler,
                             sc_file):
     """
     Function that determines whether an API call is subject to
@@ -26,8 +26,7 @@ def analyse_event_filtering(service_name,
     Filtering unsuccessful (i.e., API call not allowed).
     NOTE: To minimize false negatives, the function assumes
     that the filtering is successful when there is not enough
-    information to establish otherwise. Therefore, it should
-    be used with the analysis code that assesses the permissions.
+    information to establish otherwise.
     The following input arguments are analysed:
     -) service_name: Input specifying as a string the name of
     the relevant cloud service.
@@ -42,7 +41,7 @@ def analyse_event_filtering(service_name,
     -) api_call_ast_node: AST node of the API call.
     -) infrastruc_code_dict: Dictionary that maps the YAML file
     for the application under test.
-    -) handler_name: Input specifying as a string the name of
+    -) triggered_handler: Input specifying as a string the name of
     the relevant handler.
     -) sc_file: Source code file to be processed (full path).
     """
@@ -65,7 +64,7 @@ def analyse_event_filtering(service_name,
     # Initialize event filtering manager object
     event_filtering_manager = EventFilteringManagerCls(infrastruc_code_dict,
                                                        service_name,
-                                                       handler_name,
+                                                       triggered_handler,
                                                        sc_file)
     # Auxiliary set initialization. The following cycle stores an event-filtering
     # result for each event filtering-related input argument.
@@ -108,7 +107,7 @@ def analyse_event_filtering(service_name,
 
 def s3_event_filtering_proc_func(input_to_check,
                                  infrastruc_code_dict,
-                                 handler_name):
+                                 triggered_handler):
     """
     Function that implements the s3 service-specific event filter
     processing. If input_to_check matches the handler-specific  
@@ -119,17 +118,18 @@ def s3_event_filtering_proc_func(input_to_check,
      the service-specific filtering.
     -) infrastruc_code_dict: Dictionary that maps the infrastructure
     code (i.e., the YAML file) of the application under test.
-    -) handler_name: String specifying an application handler.
+    -) triggered_handler: String specifying an application handler.
     NOTE: Since event filtering information is not mandatory in
     the infrastructure code (as it depends upon the implementation
     of the application under test), the function returns True when
     this information is not available.
     """
     try:
+        print(f'--- Candidate triggered handler being inspected: {triggered_handler} ---')
         # Extract event filtering-related information. Because
         # of the YAML syntax adopted by the Serverless Framework,
         # the following statement extracts a list.
-        events_info = infrastruc_code_dict['functions'][handler_name]['events']
+        events_info = infrastruc_code_dict['functions'][triggered_handler]['events']
         # APPROXIMATION: The following code assumes that there is
         # only one entry for the S3 service within events_info.
         # Using multiple filters for the same service within a
@@ -163,7 +163,7 @@ class EventFilteringManagerCls:
     def __init__(self,
                  infrastruc_code_dict,
                  service_name,
-                 handler_name,
+                 triggered_handler,
                  sc_file):
         """
         Class constructor. Input arguments:
@@ -171,14 +171,14 @@ class EventFilteringManagerCls:
         code (i.e., the YAML file) of the application under test.
         -) service_name: String specifying the cloud service to be
         processed.
-        -) handler_name: String specifying an application handler.
+        -) triggered_handler: String specifying an application handler.
         -) sc_file: String specifying the full path of the source code
         file to be processed.
         """
         # Initialize attributes (from input arguments)
         self.infrastruc_code_dict = infrastruc_code_dict
         self.service_name = service_name
-        self.handler_name = handler_name
+        self.triggered_handler = triggered_handler
         self.sc_file = sc_file
         # Call initialization methods
         self._init_proc_func_dict()
@@ -267,4 +267,4 @@ class EventFilteringManagerCls:
         # Return result of service-specific processing
         return self.proc_func_dict[self.service_name](input_to_check,
                                                       self.infrastruc_code_dict,
-                                                      self.handler_name)
+                                                      self.triggered_handler)
