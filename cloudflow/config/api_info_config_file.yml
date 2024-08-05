@@ -26,6 +26,8 @@ s3:
                 - '*'
             resources:
                 - Bucket: None
+            events_filtering:
+                - Key: None
         get_object:
             events:
                 - EventName1
@@ -63,6 +65,8 @@ s3:
             permissions:
                 - PutObject
                 - '*'
+            events_filtering:
+                - Key: None
         get_object:
             events:
                 - EventName1
@@ -76,6 +80,8 @@ s3:
             permissions:
                 - PutObject
                 - '*'
+            events_filtering:
+                - Key: 1
         
 dynamodb:
     client_obj:
