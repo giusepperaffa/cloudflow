@@ -294,8 +294,6 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         required_permissions = set(self.config_dict[service][interf_obj_type + '_obj'][api_name]['permissions'])
         # Resource-related information for the API is extracted from configuration dictionary.
         resource_info = self.config_dict[service][interf_obj_type + '_obj'][api_name].get('resources')
-        # Event filtering-related information for the API is extracted from configuration dictionary.
-        event_filtering_info = self.config_dict[service][interf_obj_type + '_obj'][api_name].get('events_filtering')
         # Obtain handler name specified in the infrastructure code
         handler_name = self._get_handler_from_function(function_name)
         # Service-specific permissions result
@@ -313,14 +311,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                                                                      self.infrastruc_code_dict,
                                                                      handler_name,
                                                                      self.sc_file)
-        # Event filtering result
-        event_filtering_res = analyse_event_filtering(service,
-                                                      event_filtering_info,
-                                                      api_call_ast_node,
-                                                      self.infrastruc_code_dict,
-                                                      handler_name,
-                                                      self.sc_file)
-        return (service_perm_res and resource_level_perm_res and event_filtering_res)
+        return (service_perm_res and resource_level_perm_res)
 
     # === Protected Method ===
     def _check_api_support(self,
@@ -420,21 +411,34 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
         # a given event, the handlers dictionary stored in one of the
         # instance variables is first processed with a function.
         events_handlers_dict = get_events_handlers_dict(self.handlers_dict)
+        # Extract event filtering-related information for the API
+        event_filtering_info = self.config_dict[service][interf_obj_type + '_obj'][api_name].get('events_filtering')
         # The logic implemented in this method takes into account that
         # a given API call can trigger multiple events, and for each of
         # them code synthesis and injection are potentially needed.
         for event in self.config_dict[service][interf_obj_type + '_obj'][api_name]['events']:
             try:
                 for handler in events_handlers_dict[(service, event)]:
-                    handler_qual_name = self._get_handler_qual_name(handler)
-                    # Synthetize event object initialization
-                    event_obj_init_stmt = self._syn_event_obj_init_stmt(service,
-                                                                        event,
-                                                                        api_call_ast_node,
-                                                                        interm_interf_record_set)
-                    # Synthetize handler call
-                    syn_handler_call = self._syn_handler_call(handler_qual_name)
-                    yield event_obj_init_stmt, syn_handler_call
+                    # Event filtering result
+                    event_filtering_res = analyse_event_filtering(service,
+                                                                  event_filtering_info,
+                                                                  api_call_ast_node,
+                                                                  self.infrastruc_code_dict,
+                                                                  handler,
+                                                                  self.sc_file)
+                    if event_filtering_res:
+                        handler_qual_name = self._get_handler_qual_name(handler)
+                        # Synthetize event object initialization
+                        event_obj_init_stmt = self._syn_event_obj_init_stmt(service,
+                                                                            event,
+                                                                            api_call_ast_node,
+                                                                            interm_interf_record_set)
+                        # Synthetize handler call
+                        syn_handler_call = self._syn_handler_call(handler_qual_name)
+                        yield event_obj_init_stmt, syn_handler_call
+                    else:
+                        print('--- Event filtering detected - No code injected ---')
+                        yield None, None
             except:
                 yield None, None
 
