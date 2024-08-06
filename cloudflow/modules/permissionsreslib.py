@@ -174,6 +174,16 @@ def analyse_resource_level_permissions(required_api_permissions,
                         all([('/' in resource_arn.get_resource_id()),
                              resource_to_match in resource_arn.get_resource_id().split('/')])]):
                     return resource
+    # ================
+    def inspect_perm_res_dict(permission_resource_dict):
+        """
+        Function that processes the permission-resource dictionary
+        and returns True if all the resources are resolved and are
+        valid ARNs, False otherwise.
+        """
+        aws_arn_check = all([AWSARNManagerCls(resource).is_valid()
+                             for resource in permission_resource_dict])
+        return check_if_resolved(permission_resource_dict) and aws_arn_check
     # ==================
     # Preliminary checks
     # ==================
@@ -265,11 +275,11 @@ def analyse_resource_level_permissions(required_api_permissions,
             # APPROXIMATION: Since a resource match has not been found,
             # then the result depends on how accurately the resources
             # in the permission-resource dictionary have been resolved.
-            # If all the resources have been fully resolved, and no
-            # match was found, then it is reasonable to conclude that
-            # the application does not have the permissions to execute
-            # the API call.
-            permission_results.add(not check_if_resolved(perm_res_dict))
+            # If all the resources have been fully resolved and are
+            # valid ARNs, but no match was found, then it is reasonable
+            # to conclude that the application under test does not have
+            # the permissions to execute the API call.
+            permission_results.add(not inspect_perm_res_dict(perm_res_dict))
     # The returned boolean flag takes into account the results
     # obtained for each resource-related API input argument.
     return all(permission_results)
