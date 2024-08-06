@@ -18,6 +18,14 @@ class AWSARNDataCls:
     account_id: str = ''
     resource_id: str = ''
 
+    # === Method ===
+    def is_default(self):
+        """
+        Method that returns True if the instance contains
+        only default values, False otherwise.
+        """
+        return all([getattr(self, elem) == '' for elem in self.__dataclass_fields__])
+
 class AWSARNManagerCls:
     # === Constructor ===
     def __init__(self, arn, arn_parts_num=6):
@@ -120,3 +128,14 @@ class AWSARNManagerCls:
         """
         return self.aws_arn_data.service
 
+    # === Method ===
+    def is_valid(self):
+        """
+        Method that returns True if the string passed to
+        the constructor is a valid ARN, False otherwise.
+        """
+        # An invalid ARN raises an exception that prevents
+        # the extraction of the ARN fields. In this case,
+        # the instance of the data class AWSARNDataCls
+        # contains only default values.
+        return not self.aws_arn_data.is_default()
