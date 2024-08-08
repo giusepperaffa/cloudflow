@@ -32,6 +32,14 @@ class PluginModelCls:
         return
 
     # === Method ===
+    def extract_perm_res_dict(self):
+        """
+        Method to be further specialized in the derived
+        plugin model class, if relevant to the plugin.
+        """
+        return
+
+    # === Method ===
     def extract_services_permissions(self):
         """
         Method to be further specialized in the derived

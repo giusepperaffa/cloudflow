@@ -110,6 +110,25 @@ def test_service_permissions_extraction(get_yaml_test_file_dict):
     expected_result = {'dynamodb': set(['GetItem', 'PutItem'])}
     assert perm_dict == expected_result
 
+@pytest.mark.yaml_test_file(__file__, 'serverless_iam_roles_per_function_basic.yml')
+def test_permission_resource_dict_extraction(get_yaml_test_file_dict):
+    plugin_manager = PluginManagerCls(get_yaml_test_file_dict)
+    extracted_info = plugin_manager.plugin_extracted_info
+    plugin_data = extracted_info.plugin_info
+    assert extracted_info.has_perm_res_dict()
+    assert set(['func1', 'func2']) == set(plugin_data['resources'].keys())
+    # Handler-level permissions in the test file refer to the same resource
+    resource_key = 'arn:aws:dynamodb:${self:provider.region}:*:table/mytable'
+    for handler in ('func1', 'func2'):
+        assert set(extracted_info.get_perm_res_dict_for_handler(handler).keys()) == \
+            {resource_key}
+    assert extracted_info.get_perm_res_dict_for_handler('func1')[resource_key] == \
+        {('dynamodb', 'GetItem')}
+    assert extracted_info.get_perm_res_dict_for_handler('func2')[resource_key] == \
+        {('dynamodb', 'PutItem')}
+    assert extracted_info.get_perm_res_dict_for_handler('func1', 's3')[resource_key] == \
+        set()
+
 @pytest.mark.yaml_test_file(__file__, 'serverless_step_functions_basic.yml')
 def test_step_functions_basic(get_yaml_test_file_dict):
     plugin_manager = PluginManagerCls(get_yaml_test_file_dict)

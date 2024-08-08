@@ -7,7 +7,6 @@ import re
 # ========================================
 # Import Python Modules (Project Specific)
 # ========================================
-from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 from cloudflow.pluginmodels.iamrolesperfunctionpluginreslib import IAMRolesPerFunctionPluginModelCls
 from cloudflow.pluginmodels.stepfunctionspluginreslib import StepFunctionsPluginModelCls
 
@@ -44,6 +43,37 @@ class PluginExtractedInfoCls:
             return None
         except Exception as e:
             print(f'--- Configuration parameters for plugin {plugin_name} not retrieved ---')
+            print(f'--- {e} ---')
+            return None
+
+    # === Method ===
+    def get_perm_res_dict_for_handler(self, handler_name, service_name=None):
+        """
+        Method that returns the permission-resource dictionary
+        for a specific handler. Input parameters:
+        -) handler_name: String specifying the handler name
+        -) service_name: String specifying the cloud service
+        name. If None, all the available permissions for each
+        resource are returned.
+        """
+        try:
+            # Extract permission-resource dict from data structure
+            if service_name is not None:
+                # Filter by service to obtain the returned dictionary
+                flt_perm_res_dict = dict()
+                for resource in self.plugin_info['resources'][handler_name]:
+                    flt_perm_res_dict[resource] = {perm_tuple for perm_tuple
+                                                   in self.plugin_info['resources'][handler_name][resource]
+                                                   if perm_tuple[0] == service_name}
+                return flt_perm_res_dict
+            else:
+                return self.plugin_info['resources'][handler_name]
+        except KeyError as e:
+            print(f'--- Permission-resource dictionary for handler {handler_name} not retrieved ---')
+            print(f'--- The following key is not present in the plugin data structure: {e} ---')
+            return None
+        except Exception as e:
+            print(f'--- Permission-resource dictionary for handler {handler_name} not retrieved ---')
             print(f'--- {e} ---')
             return None
 
@@ -151,6 +181,15 @@ class PluginExtractedInfoCls:
         return 'handlers' in self.plugin_info
 
     # === Method ===
+    def has_perm_res_dict(self):
+        """
+        Method that returns True if the data structure includes
+        handler-level, permission-resource dictionaries, False
+        otherwise.
+        """
+        return 'resources' in self.plugin_info
+
+    # === Method ===
     def is_empty(self):
         """
         Method that returns True if the data structure managed by
@@ -205,6 +244,23 @@ class PluginExtractedInfoCls:
                 except KeyError as e:
                     self.plugin_info['handlers'][handler] = permissions
 
+    def store_perm_res_dict(self, permission_resource_dict):
+        """
+        Method that stores handler-specific, permission-resource dictionaries
+        in the data structure handled by the class. The input parameter is a
+        dictionary structured as follows:
+        -) Keys: Resouce specified as string (typically ARN)
+        -) Values: Set of two-element tuples, where the first is the cloud
+        service (string), whilst the second is the permissions (string).
+        """
+        # Process handler-level permission-resource dictionaries
+        if permission_resource_dict is not None:
+            for handler, resource_dict in permission_resource_dict.items():
+                try:
+                    self.plugin_info['resources'][handler].update(resource_dict)
+                except KeyError as e:
+                    self.plugin_info['resources'][handler] = resource_dict
+
 class PluginManagerCls:
     # === Constructor ===
     def __init__(self, config_dict):
@@ -249,6 +305,14 @@ class PluginManagerCls:
         # Extract handler-level permissions dictionary
         handlers_permissions_dict = plugin_model_obj.extract_handlers_permissions()
         self.plugin_extracted_info.store_handlers_permissions(handlers_permissions_dict)
+
+    def _extract_perm_res_dict(self, plugin_model_obj):
+        """
+        Method that extracts and stores handlers-specific,
+        permission-resource dictionaries.
+        """
+        perm_res_dict = plugin_model_obj.extract_perm_res_dict()
+        self.plugin_extracted_info.store_perm_res_dict(perm_res_dict)
 
     # === Method ===
     def _extract_services_permissions(self, plugin_model_obj):

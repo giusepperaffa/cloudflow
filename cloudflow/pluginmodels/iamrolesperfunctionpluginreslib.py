@@ -78,3 +78,33 @@ class IAMRolesPerFunctionPluginModelCls(PluginModelCls):
             except:
                 pass
         return handlers_perm_dict
+
+    # === Method ===
+    def extract_perm_res_dict(self):
+        """
+        Method that extracts the permission-resource
+        dictionary for each handler.
+        NOTE: The returned data structure is a nested
+        dictionary, because each handler can have a
+        different permission-resource dictionary.
+        """
+        # Initialize returned data structure
+        perm_res_dict = dict()
+        # Process all the handlers in the configuration file
+        for handler in self.config_dict['functions']:
+            print(f'--- Extracting permission-resource dictionary for handler: {handler} ---')
+            try:
+                # Retrieve handler-specific permission dictionary
+                handler_perm_dict = self.config_dict['functions'][handler]['iamRoleStatements'][0]
+                # Initialize handler-specific returned dictionary entry
+                if handler_perm_dict['Effect'] == 'Allow':
+                    # Generator object to split the cloud service from
+                    # the actual permission. Both pieces of information
+                    # are returned in a tuple.
+                    service_perm_gen_obj = ((perm.split(':')[0].strip(), perm.split(':')[1].strip())
+                                            for perm in handler_perm_dict['Action'])
+                    perm_res_dict[handler] = {str(handler_perm_dict['Resource']): {service_perm for service_perm
+                                                                                   in service_perm_gen_obj}}
+            except:
+                pass
+        return perm_res_dict
