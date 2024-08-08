@@ -3,6 +3,7 @@
 # ========================================
 import ast
 import collections
+import copy
 
 # ========================================
 # Import Python Modules (Project Specific)
@@ -283,6 +284,71 @@ def analyse_resource_level_permissions(required_api_permissions,
     # The returned boolean flag takes into account the results
     # obtained for each resource-related API input argument.
     return all(permission_results)
+
+def process_perm_res_dict(perm_res_dict,
+                          plugin_info,
+                          handler_name):
+    """
+    Function that processes the permission-resource dictionary
+    and the plugin-related information for a specific handler,
+    and returns either a modified version of the permission-
+    resource dictionary (which incorporates handler-level
+    information as well) or the permission-resource dictionary
+    itself (when there is not enough information, e.g.,
+    handler name set to None).
+    The following input arguments are analysed:
+    -) perm_res_dict: Dictionary with permissions-related
+    information for resources explicitly specified in the
+    YAML file. It can be obtained with one of the methods
+    of the PermissionsIdentifierCls class.
+    -) plugin_info: Instance of the class holding the
+    information extracted by using the plugin models.
+    -) handler_name: Input specifying as a string the name
+    of the handler to be processed. If this input is set
+    to None, no handler-level information is processed.
+    """
+    # ================
+    # Nested functions
+    # ================
+    def get_override_config_for_handler(plugin_info, handler_name):
+        return [value for handler, value
+                in plugin_info.get_config_params_for_plugin('IAMRolesPerFunction')['Override']
+                if handler == handler_name][0]
+    # ==============
+    # Main algorithm
+    # ==============
+    if plugin_info.is_empty() or (handler_name is None):
+        # No handler-level information to process.
+        return perm_res_dict
+    elif all([plugin_info.has_perm_res_dict(),
+              plugin_info.has_config_params_for_plugin('IAMRolesPerFunction')]):
+        # Deep copy of the permission-resource dictionary
+        # passed as input is created to avoid modifying
+        # in place.
+        processed_perm_res_dict = copy.deepcopy(perm_res_dict)
+        # Processing depends on the override configuration
+        # of the serverless-iam-roles-per-function plugin.
+        print('--- Processing handler-level permission-resource dictionary...')
+        if get_override_config_for_handler(plugin_info, handler_name):
+            # Override enabled. For resources specified at handler
+            # level, only handler-level permissions are considered.
+            processed_perm_res_dict.update(plugin_info.get_perm_res_dict_for_handler(handler_name))
+        else:
+            # Override disabled. For resources specified at handler
+            # level, handler-level permissions are merged with
+            # provider-level permissions.
+            for resource, permissions in plugin_info.get_perm_res_dict_for_handler(handler_name).items():
+                try:
+                    processed_perm_res_dict[resource].update(permissions)
+                except KeyError:
+                    processed_perm_res_dict[resource] = permissions
+    else:
+        # In all other cases, the permission-resource dictionary
+        # is returned unmodified.
+        return perm_res_dict
+    # If no early return gets executed, the function returns the
+    # processed permission-resource dictionary.
+    return processed_perm_res_dict
 
 # =======
 # Classes
