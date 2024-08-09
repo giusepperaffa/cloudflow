@@ -309,6 +309,7 @@ class CodeSynthesisInjectionCls(astor.TreeWalk):
                                                                      resource_info,
                                                                      api_call_ast_node,
                                                                      self.infrastruc_code_dict,
+                                                                     self.plugin_info,
                                                                      handler_name,
                                                                      self.sc_file)
         return (service_perm_res and resource_level_perm_res)

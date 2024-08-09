@@ -108,6 +108,7 @@ def analyse_resource_level_permissions(required_api_permissions,
                                        resources_info,
                                        api_call_ast_node,
                                        infrastruc_code_dict,
+                                       plugin_info,
                                        handler_name,
                                        sc_file):
     """
@@ -143,6 +144,8 @@ def analyse_resource_level_permissions(required_api_permissions,
     -) api_call_ast_node: AST node of the API call.
     -) infrastruc_code_dict: Dictionary that maps the YAML
     file for the application under test.
+    -) plugin_info: Instance of the class holding the
+    information extracted by using the plugin models.
     -) handler_name: Input specifying as a string the name
     of the relevant handler.
     -) sc_file: Source code file to be processed (full path).
@@ -185,9 +188,9 @@ def analyse_resource_level_permissions(required_api_permissions,
         aws_arn_check = all([AWSARNManagerCls(resource).is_valid()
                              for resource in permission_resource_dict])
         return check_if_resolved(permission_resource_dict) and aws_arn_check
-    # ==================
-    # Preliminary checks
-    # ==================
+    # =================================
+    # Preliminary checks and processing
+    # =================================
     # Preliminary checks are implemented to identify specific cases
     # when the function can exit without running the main algorithm.
     if resources_info is None:
@@ -198,14 +201,21 @@ def analyse_resource_level_permissions(required_api_permissions,
         # extracts permissions-related information from other parts of
         # the YAML file.
         return True
-    elif '*' in perm_res_dict:
+    # To take into account the effect of the plugins, the provider-level
+    # permission-resource dictionary is processed by calling a dedicated
+    # function. The processed permission-resource dictionary is then used
+    # by the main algorithm.
+    proc_perm_res_dict = process_perm_res_dict(perm_res_dict,
+                                               plugin_info,
+                                               handler_name)
+    if '*' in proc_perm_res_dict:
         # If the wildcards syntax is used to specify permissions relevant
         # to the API being processed, then a detailed processing of the
         # resource-related API input arguments is not necessary. The
         # permissions for the relevant service specified with wildcards
         # syntax are compared with the permissions required for the API.
         print('--- Wildcards syntax detected - Performing checks... ---')
-        permission_set = extract_permission_set('*', perm_res_dict, service_name)
+        permission_set = extract_permission_set('*', proc_perm_res_dict, service_name)
         if permission_set & required_api_permissions != set():
             return True
     # ==============
@@ -237,7 +247,7 @@ def analyse_resource_level_permissions(required_api_permissions,
             # Find resource within permission-resource dictionary that
             # matches the string extracted by processing the AST node.
             resource_match = get_close_match(resource_input.value,
-                                             perm_res_dict,
+                                             proc_perm_res_dict,
                                              service_name)
         else:
             # Attempt to resolve the resource input with dedicated function.
@@ -249,7 +259,7 @@ def analyse_resource_level_permissions(required_api_permissions,
                 # Find resource within permission-resource dictionary that
                 # matches the string obtained by resolving the resource input.
                 resource_match = get_close_match(resolved_resource_input,
-                                                 perm_res_dict,
+                                                 proc_perm_res_dict,
                                                  service_name)
             else:
                 # The input argument does not hold a value that can be resolved,
@@ -269,7 +279,7 @@ def analyse_resource_level_permissions(required_api_permissions,
             # permission-resource dictionary are compared with those
             # required for the execution of the API.
             permission_set = extract_permission_set(resource_match,
-                                                    perm_res_dict,
+                                                    proc_perm_res_dict,
                                                     service_name)
             permission_results.add(permission_set & required_api_permissions != set())
         else:
@@ -280,7 +290,7 @@ def analyse_resource_level_permissions(required_api_permissions,
             # valid ARNs, but no match was found, then it is reasonable
             # to conclude that the application under test does not have
             # the permissions to execute the API call.
-            permission_results.add(not inspect_perm_res_dict(perm_res_dict))
+            permission_results.add(not inspect_perm_res_dict(proc_perm_res_dict))
     # The returned boolean flag takes into account the results
     # obtained for each resource-related API input argument.
     return all(permission_results)
@@ -328,7 +338,7 @@ def process_perm_res_dict(perm_res_dict,
         processed_perm_res_dict = copy.deepcopy(perm_res_dict)
         # Processing depends on the override configuration
         # of the serverless-iam-roles-per-function plugin.
-        print('--- Processing handler-level permission-resource dictionary...')
+        print('--- Processing handler-level permission-resource dictionary... ---')
         if get_override_config_for_handler(plugin_info, handler_name):
             # Override enabled. For resources specified at handler
             # level, only handler-level permissions are considered.
