@@ -244,6 +244,7 @@ class AnalysisManagerCls:
         self.report_manager = ReportManagerCls(self.folders_manager.tool_repo_folder,
                                                self.folders_manager.report_files_folder)
         self.report_manager.generate_summary_report()
+        self.report_manager.generate_data_flows_report()
 
     # === Method ===
     def perform_analysis(self):
