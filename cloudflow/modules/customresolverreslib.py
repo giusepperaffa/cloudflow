@@ -8,7 +8,15 @@ import yaml
 # ========================================
 # Import Python Modules (Project Specific)
 # ========================================
-from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
+from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml, extract_dict_from_json
+
+# ==========================
+# Module Regular Expressions
+# ==========================
+# Regular expression used to identify external files
+ext_file_reg_exp = re.compile(r'\{file\((?P<file_path>.+)\)\}')
+# Regular expression used to identify values specified via external files
+ext_file_value_reg_exp = re.compile(r'\{file\((?P<file_path>.+)\):(?P<config_param>.+)\}')
 
 # =========
 # Functions
@@ -84,6 +92,114 @@ def check_if_resolved(input):
 # =======
 # Classes
 # =======
+class ExtFilesManagerCls:
+    """
+    Class providing the functionality needed to extract
+    information specified in the YAML file via external
+    file (i.e., referenced in the YAML file).
+    """
+    # === Constructor ===
+    def __init__(self, yaml_file, ref_dict=None):
+        """
+        Class constructor. Input parameters:
+        -) yaml_file: YAML file full path.
+        -) ref_dict: Reference dictionary. By default,
+        the dictionary that maps the YAML is used as
+        a reference during the resolution process.
+        However, a dictionary with partially resolved
+        values can be passed to increase the chances
+        of a successful resolution.
+        """
+        self.yaml_file = yaml_file
+        self.init_ref_dict(ref_dict)
+
+    # === Protected Method ===
+    def _get_ext_file_full_path(self, rel_path):
+        """
+        Method that returns the full path corresponding
+        to the relative path passed as input argument.
+        The latter is assumed to be a path relative to
+        the YAML file.
+        """
+        # Full path of folder containing YAML file
+        yaml_file_folder = os.path.dirname(self.yaml_file)
+        # Regular expression - Detect same folder as YAML file
+        same_folder_reg_exp = re.compile(r'^\./')
+        # Regular expression - Detect folder one level up (compared to YAML file)
+        one_level_up_reg_exp = re.compile(r'^\.\./')
+        # Obtain full path
+        if same_folder_reg_exp.search(rel_path) is not None:
+            return os.path.join(yaml_file_folder,
+                                same_folder_reg_exp.sub('', rel_path))
+        elif one_level_up_reg_exp.search(rel_path) is not None:
+            return os.path.join(os.sep.join(yaml_file_folder.split(os.sep)[:-1]),
+                                one_level_up_reg_exp.sub('', rel_path))
+        else:
+            return os.path.join(yaml_file_folder, rel_path)
+
+    # === Method ===
+    def init_ref_dict(self, ref_dict):
+        """
+        Method used to initialize the reference dictionary.
+        """
+        if ref_dict is not None:
+            self.ref_dict = ref_dict
+        else:
+            self.ref_dict = extract_dict_from_yaml(os.path.dirname(self.yaml_file),
+                                                   os.path.basename(self.yaml_file))
+
+    # === Method ===
+    def resolve_ext_files(self):
+        """
+        TBC
+        """
+        ...
+
+    # === Method ===
+    def resolve_value_from_ext_file(self, unres_val):
+        """
+        Method that attempts to resolve a value specified in the processed
+        YAML file via an external file (YAML or JSON format). For instance:
+        -) ${file(core/iam.yml):iamRoleStatements}
+        The method returns the resolved value as a string.
+        Input parameter:
+        -) unres_val: Unresolved value (string)
+        NOTE: If the passed unresolved value is not specified through an
+        external file or another exception is raised, the input argument
+        is returned unaltered.
+        """
+        # Initialize dictionary with functions used to process
+        # the external file. Functions are different depending
+        # upon the external file extension.
+        proc_func_dict = dict()
+        proc_func_dict['.json'] = extract_dict_from_json
+        proc_func_dict['.yml'] = extract_dict_from_yaml
+        proc_func_dict['.yaml'] = extract_dict_from_yaml
+        # Process unresolved value
+        try:
+            print('--- Attempting to resolve value from external file... ---')
+            # Extract and resolve external file path
+            ext_file_path = ext_file_value_reg_exp.search(unres_val).group('file_path')
+            res_ext_file_path = resolve_value_from_yaml(ext_file_path, self.ref_dict)
+            # External files are typically specified in the YAML with
+            # relative paths. A dedicated method extracts the full
+            # path to facilitate further processing.
+            ext_file_path_full_path = self._get_ext_file_full_path(res_ext_file_path)
+            # Obtain external file dictionary
+            ext_file_extension = os.path.splitext(res_ext_file_path)[-1]
+            ext_file_dict = proc_func_dict[ext_file_extension](os.path.dirname(ext_file_path_full_path),
+                                                               os.path.basename(ext_file_path_full_path))
+            # Extract and resolve external file dictionary key that identifies the value
+            ext_file_key = ext_file_value_reg_exp.search(unres_val).group('config_param')
+            res_ext_file_key = resolve_value_from_yaml(ext_file_key, self.ref_dict)
+            # Return identified value as a string
+            return str(ext_file_dict[res_ext_file_key])
+        except Exception as e:
+            print(f'--- Value {unres_val} could not be resolved ---')
+            print('--- Details: ---')
+            print(f'--- {e} ---')
+            return unres_val
+
 class YAMLResolverCls:
     # ==== Constructor ===
     def __init__(self, yaml_file):
