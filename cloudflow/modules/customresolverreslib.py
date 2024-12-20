@@ -137,6 +137,49 @@ class ExtFilesManagerCls:
         else:
             return os.path.join(yaml_file_folder, rel_path)
 
+    # === Protected Method ===
+    def _get_serialized_file(self, yaml_file_full_path):
+        """
+        Method used to serialize the YAML file specified as input.
+        """
+        return yaml.serialize(yaml.compose(open(yaml_file_full_path, mode='r'),
+                                           Loader=yaml.BaseLoader))
+
+    # === Protected Method ===
+    def _process_format(self, yaml_file_full_path, offset):
+        """
+        Method that processes the input YAML file by adding an
+        a number of whitespace characters equal to the offset,
+        which must be specified as integer. The YAML file is
+        serialized, modified, and returned in serialized form.
+        NOTE: The offset is added to all the lines of the YAML
+        file, except for the first.
+        """
+        serialized_file = self._get_serialized_file(yaml_file_full_path)
+        # Separate the first line of the serialized file from
+        # the rest, which has to be further processed.
+        serialized_file_first, serialized_file_to_proc = serialized_file.split('\n', 1)
+        serialized_file_with_offset = [(' ' * offset) + elem
+                                       for elem in serialized_file_to_proc.split('\n')]
+        return '\n'.join([serialized_file_first] + serialized_file_with_offset)
+
+    # === Protected Method ===
+    def _tokenize(self):
+        """
+        Method used to identify within the YAML file the tokens
+        with values specifying external files. It is implemented
+        as a generator that yields the start and the end of the
+        token, along with the extracted external file path.
+        """
+        serialized_file = self._get_serialized_file(self.yaml_file)
+        for token in yaml.scan(serialized_file, Loader=yaml.BaseLoader):
+            if all([isinstance(token, yaml.ScalarToken),
+                    (ext_file_reg_exp.search(token.value) is not None)]):
+                yielded_tuple = (token.start_mark,
+                                 token.end_mark,
+                                 ext_file_reg_exp.search(token.value).group('file_path'))
+                yield yielded_tuple
+
     # === Method ===
     def init_ref_dict(self, ref_dict):
         """
@@ -151,9 +194,34 @@ class ExtFilesManagerCls:
     # === Method ===
     def resolve_ext_files(self):
         """
-        TBC
+        Method that identifies external files within the YAML file and
+        attempts to resolve them, i.e., include their contents within
+        the YAML file. The updated YAML file is loaded at the end of
+        the processing, and the corresponding updated dictionary is
+        returned.
         """
-        ...
+        serialized_file = self._get_serialized_file(self.yaml_file)
+        # Code developed by using this example on how to tokenize a YAML document:
+        # https://realpython.com/python-yaml/#tokenize-a-yaml-document
+        for start, end, ext_file_path in reversed(list(self._tokenize())):
+            try:
+                print(f'--- Attempting to resolve external file: {ext_file_path} ---')
+                # Resolve external file path
+                res_ext_file_path = resolve_value_from_yaml(ext_file_path, self.ref_dict)
+                # External files are typically specified in the YAML with
+                # relative paths. A dedicated method extracts the full
+                # path to facilitate further processing.
+                ext_file_path_full_path = self._get_ext_file_full_path(res_ext_file_path)
+                # Process identified external file
+                serialized_file_to_add = self._process_format(ext_file_path_full_path, start.column)
+                serialized_file = serialized_file[:start.index] + \
+                    serialized_file_to_add + serialized_file[end.index:]
+            except Exception as e:
+                print(f'--- External file {ext_file_path} could not be resolved ---')
+                print('--- Details: ---')
+                print(f'--- {e} ---')
+        # Return the dictionary mapping the modified YAML file
+        return yaml.load(serialized_file, Loader=yaml.BaseLoader)
 
     # === Method ===
     def resolve_value_from_ext_file(self, unres_val):
@@ -177,7 +245,7 @@ class ExtFilesManagerCls:
         proc_func_dict['.yaml'] = extract_dict_from_yaml
         # Process unresolved value
         try:
-            print('--- Attempting to resolve value from external file... ---')
+            print(f'--- Attempting to resolve value {unres_val} from external file... ---')
             # Extract and resolve external file path
             ext_file_path = ext_file_value_reg_exp.search(unres_val).group('file_path')
             res_ext_file_path = resolve_value_from_yaml(ext_file_path, self.ref_dict)
