@@ -108,3 +108,19 @@ def test_ext_file_to_resolve(get_test_files_folder):
     extracted_results = ['BillingMode' in resource['Resources']['EventsTable']['Properties']
                          for resource in resolved_yaml_dict['resources']]
     assert len(list(filter(lambda x: x == True, extracted_results))) == 1
+
+@pytest.mark.parametrize('yaml_file, unresolved_value, expected_result', [
+    ('serverless_unresolved_value_ext_file_simple.yml',
+     '${file(ext_file_prod_config.yml):securityGroupId}',
+     'sg-035524dc93c6d1bf8'),
+     ('serverless_unresolved_value_ext_file_nested.yml',
+      '${file(ext_file_config.yml):${self:provider.stage}.LAMBDA_MEMORY_SIZE}',
+      '256')
+])
+def test_value_from_ext_file(get_test_files_folder,
+                             yaml_file,
+                             unresolved_value,
+                             expected_result):
+    test_file = os.path.join(get_test_files_folder, yaml_file)
+    ext_files_manager_obj = ExtFilesManagerCls(test_file)
+    assert ext_files_manager_obj.resolve_value_from_ext_file(unresolved_value) == expected_result

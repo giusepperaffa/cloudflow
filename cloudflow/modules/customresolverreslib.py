@@ -146,6 +146,24 @@ class ExtFilesManagerCls:
                                            Loader=yaml.BaseLoader))
 
     # === Protected Method ===
+    def _process_nested_dict_key(self, input_dict, input_key):
+        """
+        Method that returns a value stored in a nested dictionary
+        (i.e., a dictionary containing other dictionaries) by
+        processing a key specified with dot notation. Example:
+        if input_key is a.b, the returned value will be:
+        input_dict[a][b]. Input arguments:
+        -) input_dict: Input dictionary
+        -) input_key: String specifying key with dot notation
+        """
+        for depth, key in enumerate(input_key.split('.')):
+            if depth == 0:
+                extracted_value = input_dict[key]
+            else:
+                extracted_value = extracted_value[key]
+        return extracted_value
+
+    # === Protected Method ===
     def _process_format(self, yaml_file_full_path, offset):
         """
         Method that processes the input YAML file by adding an
@@ -260,7 +278,7 @@ class ExtFilesManagerCls:
             ext_file_key = ext_file_value_reg_exp.search(unres_val).group('config_param')
             res_ext_file_key = resolve_value_from_yaml(ext_file_key, self.ref_dict)
             # Return identified value as a string
-            return str(ext_file_dict[res_ext_file_key])
+            return str(self._process_nested_dict_key(ext_file_dict, res_ext_file_key))
         except Exception as e:
             print(f'--- Value {unres_val} could not be resolved ---')
             print('--- Details: ---')

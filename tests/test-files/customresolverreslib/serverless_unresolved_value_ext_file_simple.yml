@@ -1,0 +1,19 @@
+provider:
+  environment:
+    DB_HOST: sb-${opt:stage, self:provider.stage}.cgwgx6ftjwg2.us-east-2.rds.amazonaws.com
+    DB_PASSWORD: ${ssm:/${opt:stage, self:provider.stage}/db_password~true}
+    JWT_SECRET: ${ssm:/${opt:stage, self:provider.stage}/jwt_secret~true}
+  iamRoleStatements:
+    - Action:
+        - ses:SendEmail
+      Effect: Allow
+      Resource: "*"
+  memorySize: 128
+  name: aws
+  profile: ooo
+  region: us-east-2
+  runtime: python3.6
+  stage: development
+  vpc:
+    securityGroupIds:
+      - ${file(ext_file_prod_config.yml):securityGroupId}

@@ -1,0 +1,11 @@
+provider:
+  name: aws
+  runtime: python3.7
+  region: us-west-2
+  stage: dev
+  stackName: ${self:custom.prefix}-stack
+  apiName: ${self:custom.prefix}-apigw
+  deploymentPrefix: ${self:custom.prefix}
+  endpointType: regional
+  logRetentionInDays: 90
+  memorySize: ${file(ext_file_config.yml):${self:provider.stage}.LAMBDA_MEMORY_SIZE}
