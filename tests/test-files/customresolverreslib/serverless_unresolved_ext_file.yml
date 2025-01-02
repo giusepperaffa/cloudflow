@@ -1,0 +1,16 @@
+resources:
+  - Resources:
+      EventsTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+          TableName: socless_events
+          AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          ProvisionedThroughput:
+            ReadCapacityUnits: '200'
+            WriteCapacityUnits: '200'
+  - ${{file(./ext_file_dynamodb.yml)}}

@@ -11,6 +11,7 @@ from cloudflow.utils.fileprocessingreslib import extract_dict_from_yaml
 from cloudflow.modules.customresolverreslib import YAMLResolverCls
 from cloudflow.modules.customresolverreslib import resolve_value_from_yaml
 from cloudflow.modules.customresolverreslib import check_if_resolved
+from cloudflow.modules.customresolverreslib import ExtFilesManagerCls
 
 # ========
 # Fixtures
@@ -94,3 +95,16 @@ def test_unresolved_values_no_nested(get_test_files_folder, test_value, expected
 ])
 def test_check_if_resolved(test_value, expected_result):
     assert expected_result == check_if_resolved(test_value)
+
+def test_ext_file_to_resolve(get_test_files_folder):
+    test_file = os.path.join(get_test_files_folder, 'serverless_unresolved_ext_file.yml')
+    ext_files_manager_obj = ExtFilesManagerCls(test_file)
+    resolved_yaml_dict = ext_files_manager_obj.resolve_ext_files()
+    # Check types (of and within returned data structure)
+    assert isinstance(resolved_yaml_dict, dict)
+    assert isinstance(resolved_yaml_dict['resources'], list)
+    # Check returned data structure consistency
+    assert len(resolved_yaml_dict['resources']) == 2
+    extracted_results = ['BillingMode' in resource['Resources']['EventsTable']['Properties']
+                         for resource in resolved_yaml_dict['resources']]
+    assert len(list(filter(lambda x: x == True, extracted_results))) == 1

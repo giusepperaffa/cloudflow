@@ -173,8 +173,7 @@ class ExtFilesManagerCls:
         """
         serialized_file = self._get_serialized_file(self.yaml_file)
         for token in yaml.scan(serialized_file, Loader=yaml.BaseLoader):
-            if all([isinstance(token, yaml.ScalarToken),
-                    (ext_file_reg_exp.search(token.value) is not None)]):
+            if isinstance(token, yaml.ScalarToken) and (ext_file_reg_exp.search(token.value) is not None):
                 yielded_tuple = (token.start_mark,
                                  token.end_mark,
                                  ext_file_reg_exp.search(token.value).group('file_path'))
