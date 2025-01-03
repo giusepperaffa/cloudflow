@@ -323,8 +323,6 @@ class YAMLResolverCls:
         """
         # Regular expression used to identify unresolved values
         unres_val_reg_exp = re.compile(r'\$\{(.*)\}')
-        # Regular expression used to identify values specified via external files
-        file_detect_reg_exp = re.compile(r'^file\(.*\)')
         search_obj = unres_val_reg_exp.search(value)
         if search_obj is not None:
             extracted_str = search_obj.group(1)
@@ -366,8 +364,10 @@ class YAMLResolverCls:
                     res_value + self._process_value(value[search_obj.end():])
             except Exception as e:
                 print(f'--- Value {extracted_str} could not be resolved ---')
-                if file_detect_reg_exp.search(extracted_str) is not None:
-                    return extracted_str
+                if ext_file_value_reg_exp.search('{' + extracted_str + '}') is not None:
+                    # Initialize external files manager
+                    ext_files_manager = ExtFilesManagerCls(self.yaml_file, self.ref_dict)
+                    return ext_files_manager.resolve_value_from_ext_file('{' + extracted_str + '}')
                 else:
                     return value
         else:

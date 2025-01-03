@@ -40,12 +40,6 @@ def test_unresolved_value_with_option(get_test_files_folder, get_multi_unresolve
     resolved_yaml_dict = yaml_resolver_obj.resolve_yaml('dict')
     assert resolved_yaml_dict['provider']['stage'] == 'stage'
 
-def test_unresolved_value_within_file(get_test_files_folder, get_multi_unresolved_values_file):
-    test_file = os.path.join(get_test_files_folder, get_multi_unresolved_values_file)
-    yaml_resolver_obj = YAMLResolverCls(test_file)
-    resolved_yaml_dict = yaml_resolver_obj.resolve_yaml('dict')
-    assert resolved_yaml_dict['provider']['iamRoleStatements'] == 'file(./configs/stage/iam.yml)'
-
 def test_unresolvable_value(get_test_files_folder, get_multi_unresolved_values_file):
     test_file = os.path.join(get_test_files_folder, get_multi_unresolved_values_file)
     yaml_resolver_obj = YAMLResolverCls(test_file)
@@ -124,3 +118,19 @@ def test_value_from_ext_file(get_test_files_folder,
     test_file = os.path.join(get_test_files_folder, yaml_file)
     ext_files_manager_obj = ExtFilesManagerCls(test_file)
     assert ext_files_manager_obj.resolve_value_from_ext_file(unresolved_value) == expected_result
+
+@pytest.mark.parametrize('yaml_file, expected_result', [
+    ('serverless_unresolved_value_ext_file_simple.yml', 'sg-035524dc93c6d1bf8'),
+    ('serverless_unresolved_value_ext_file_nested.yml', '256')
+])
+def test_unresolved_value_within_file(get_test_files_folder,
+                                      yaml_file,
+                                      expected_result):
+    test_file = os.path.join(get_test_files_folder, yaml_file)
+    yaml_resolver = YAMLResolverCls(test_file)
+    resolved_yaml_dict = yaml_resolver.resolve_yaml()
+    if yaml_file.endswith('simple.yml'):
+        assert isinstance(resolved_yaml_dict['provider']['vpc']['securityGroupIds'], list)
+        assert resolved_yaml_dict['provider']['vpc']['securityGroupIds'][0] == expected_result
+    elif yaml_file.endswith('nested.yml'):
+        assert resolved_yaml_dict['provider']['memorySize'] == expected_result
