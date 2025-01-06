@@ -3,6 +3,7 @@
 # =========================================
 import os
 import pytest
+import shutil
 
 # ========================================
 # Import Python Modules (Project-specific)
@@ -30,33 +31,33 @@ def get_multi_unresolved_values_file():
 # ==============
 def test_returned_type(get_test_files_folder, get_multi_unresolved_values_file):
     test_file = os.path.join(get_test_files_folder, get_multi_unresolved_values_file)
-    yaml_resolver_obj = YAMLResolverCls(test_file)
+    yaml_resolver_obj = YAMLResolverCls(test_file, False)
     resolved_yaml_dict = yaml_resolver_obj.resolve_yaml('dict')
     assert isinstance(resolved_yaml_dict, dict)
 
 def test_unresolved_value_with_option(get_test_files_folder, get_multi_unresolved_values_file):
     test_file = os.path.join(get_test_files_folder, get_multi_unresolved_values_file)
-    yaml_resolver_obj = YAMLResolverCls(test_file)
+    yaml_resolver_obj = YAMLResolverCls(test_file, False)
     resolved_yaml_dict = yaml_resolver_obj.resolve_yaml('dict')
     assert resolved_yaml_dict['provider']['stage'] == 'stage'
 
 def test_unresolvable_value(get_test_files_folder, get_multi_unresolved_values_file):
     test_file = os.path.join(get_test_files_folder, get_multi_unresolved_values_file)
-    yaml_resolver_obj = YAMLResolverCls(test_file)
+    yaml_resolver_obj = YAMLResolverCls(test_file, False)
     resolved_yaml_dict = yaml_resolver_obj.resolve_yaml('dict')
     assert resolved_yaml_dict['provider']['environment']['ALERT_PROCESS_ERRORS'] == \
         '${opt:alertProcessErrors, self:custom.defaultAlertProcessErrors}'
 
 def test_nested_unresolved_value(get_test_files_folder, get_multi_unresolved_values_file):
     test_file = os.path.join(get_test_files_folder, get_multi_unresolved_values_file)
-    yaml_resolver_obj = YAMLResolverCls(test_file)
+    yaml_resolver_obj = YAMLResolverCls(test_file, False)
     resolved_yaml_dict = yaml_resolver_obj.resolve_yaml('dict')
     assert resolved_yaml_dict['provider']['environment']['CONFIG_FILE'] == \
         './configs/stage/config.cfg'
 
 def test_concatenated_unresolved_value(get_test_files_folder, get_multi_unresolved_values_file):
     test_file = os.path.join(get_test_files_folder, get_multi_unresolved_values_file)
-    yaml_resolver_obj = YAMLResolverCls(test_file)
+    yaml_resolver_obj = YAMLResolverCls(test_file, False)
     resolved_yaml_dict = yaml_resolver_obj.resolve_yaml('dict')
     assert resolved_yaml_dict['functions']['cloudwatchLogsSubscriber']['events'][0]['cloudwatchLog'] == \
         '/aws/lambda/some-service-stage-someFunction1'
@@ -103,6 +104,20 @@ def test_ext_file_to_resolve(get_test_files_folder):
                          for resource in resolved_yaml_dict['resources']]
     assert len(list(filter(lambda x: x == True, extracted_results))) == 1
 
+def test_ext_file_to_resolve_integration(get_test_files_folder):
+    test_file = os.path.join(get_test_files_folder, 'serverless_unresolved_ext_file.yml')
+    test_file_copy = os.path.join(get_test_files_folder, 'serverless_unresolved_ext_file_COPY.yml')
+    # Copy test file as the test requires modifying it
+    shutil.copy2(test_file, test_file_copy)
+    yaml_resolver = YAMLResolverCls(test_file_copy)
+    resolved_yaml_dict = yaml_resolver.resolve_yaml()
+    assert len(resolved_yaml_dict['resources']) == 2
+    extracted_results = ['ProvisionedThroughput' in resource['Resources']['EventsTable']['Properties']
+                         for resource in resolved_yaml_dict['resources']]
+    assert len(list(filter(lambda x: x == True, extracted_results))) == 1
+    # Remove modified test file
+    os.remove(test_file_copy)
+
 @pytest.mark.parametrize('yaml_file, unresolved_value, expected_result', [
     ('serverless_unresolved_value_ext_file_simple.yml',
      '${file(ext_file_prod_config.yml):securityGroupId}',
@@ -127,7 +142,7 @@ def test_unresolved_value_within_file(get_test_files_folder,
                                       yaml_file,
                                       expected_result):
     test_file = os.path.join(get_test_files_folder, yaml_file)
-    yaml_resolver = YAMLResolverCls(test_file)
+    yaml_resolver = YAMLResolverCls(test_file, False)
     resolved_yaml_dict = yaml_resolver.resolve_yaml()
     if yaml_file.endswith('simple.yml'):
         assert isinstance(resolved_yaml_dict['provider']['vpc']['securityGroupIds'], list)

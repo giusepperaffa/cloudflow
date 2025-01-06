@@ -287,11 +287,17 @@ class ExtFilesManagerCls:
 
 class YAMLResolverCls:
     # ==== Constructor ===
-    def __init__(self, yaml_file):
+    def __init__(self, yaml_file, resolve_ext_files_enable=True):
         """
-        The full path of the YAML file has to be passed to the constructor.
+        Class constructor. Input arguments:
+        -) yaml_file: Full path of the YAML file to be resolved.
+        -) resolve_ext_files_enable: Boolean argument that enables
+        (True) / disables (False) the resolution of external files
+        referenced in the YAML. Disabling their resolution can be
+        helpful for testing purposes.
         """
         self.yaml_file = yaml_file
+        self._resolve_ext_files(resolve_ext_files_enable)
         self.init_ref_dict()
 
     # === Method ===
@@ -372,6 +378,22 @@ class YAMLResolverCls:
                     return value
         else:
             return value
+
+    # === Method ===
+    def _resolve_ext_files(self, enable=True):
+        """
+        Method that resolves external files referenced in the YAML,
+        if the Boolean input parameter is set to True (otherwise,
+        no processing takes place). As a result of the resolution,
+        the YAML file passed to the constructor is modified by this
+        method.
+        """
+        if enable:
+            # Create instance of class that manages external files
+            ext_files_manager = ExtFilesManagerCls(self.yaml_file)
+            extracted_dict = ext_files_manager.resolve_ext_files()
+            with open(self.yaml_file, mode='w') as file_obj:
+                yaml.dump(extracted_dict, file_obj)
 
     # === Method ===
     def resolve_yaml(self, output='dict'):
