@@ -287,7 +287,7 @@ class ExtFilesManagerCls:
 
 class YAMLResolverCls:
     # ==== Constructor ===
-    def __init__(self, yaml_file, resolve_ext_files_enable=True):
+    def __init__(self, yaml_file, resolve_ext_files_enable=False):
         """
         Class constructor. Input arguments:
         -) yaml_file: Full path of the YAML file to be resolved.
