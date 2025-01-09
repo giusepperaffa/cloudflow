@@ -109,7 +109,7 @@ def test_ext_file_to_resolve_integration(get_test_files_folder):
     test_file_copy = os.path.join(get_test_files_folder, 'serverless_unresolved_ext_file_COPY.yml')
     # Copy test file as the test requires modifying it
     shutil.copy2(test_file, test_file_copy)
-    yaml_resolver = YAMLResolverCls(test_file_copy)
+    yaml_resolver = YAMLResolverCls(test_file_copy, True)
     resolved_yaml_dict = yaml_resolver.resolve_yaml()
     assert len(resolved_yaml_dict['resources']) == 2
     extracted_results = ['ProvisionedThroughput' in resource['Resources']['EventsTable']['Properties']
