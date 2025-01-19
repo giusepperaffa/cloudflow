@@ -2,6 +2,7 @@
 # Import Python Modules (Standard Library)
 # ========================================
 import os
+import time
 import traceback
 
 # ========================================
@@ -136,6 +137,8 @@ class AnalysisManagerCls:
                                                     self.infrastruc_code_dict,
                                                     self.plugin_info)
         code_syn_inj_manager.inject_synthesized_code()
+        # Print CloudFlow-specific execution time
+        print(f'--- Execution time - CloudFlow: {(time.time() - self.exec_time_start):.3f} [s] ---')
         # Instantiate class that handles the execution of Pysa
         print('--- Automated type inference is about to start... ---')
         self.pysa_exec_manager = PysaExecManagerCls(self.folders_manager)
@@ -181,6 +184,8 @@ class AnalysisManagerCls:
         for the CloudFlow tool. The code in this method is
         designed to analyse one repository only.
         """
+        # Instance variable with reference for execution time measurements
+        self.exec_time_start = time.time()
         # Instantiate class that handles the configuration file used by the tool
         print('--- Tool configuration file is being processed... ---')
         self.tool_config_manager = ToolConfigManagerCls(self.config_obj.config_file)
@@ -217,6 +222,8 @@ class AnalysisManagerCls:
                 print('--- Analysis interrupted ---')
         else:
             print('--- Inconsistency detected - Analysis interrupted ---')
+        # Print total execution time
+        print(f'--- Execution time - Total: {(time.time() - self.exec_time_start):.3f} [s] ---')
 
     # === Method ===
     def analyse_repos_within_folder(self, target_folder):
