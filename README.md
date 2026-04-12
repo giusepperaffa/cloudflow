@@ -5,7 +5,7 @@ As detailed in this [Zenodo record](https://doi.org/10.5281/zenodo.15609299), Cl
 - CloudFlow - Tag [v0.0.1](https://github.com/giusepperaffa/cloudflow/tags)
 - CloudBench - Tag [v0.0.1](https://github.com/giusepperaffa/cloudbench/tags)
 
-The artifact evaluation appendix is also available on the research paper [webpage](https://www.usenix.org/system/files/usenixsecurity25-appendix-raffa.pdf). A summary of the paper can be found in the following video.
+The artifact evaluation appendix is also available on the research paper [webpage](https://www.usenix.org/system/files/usenixsecurity25-appendix-raffa.pdf). A summary of the paper can be found in the following video as well as in this [poster](https://github.com/giusepperaffa/serverless-security-microbenchmarks/blob/main/docs/USENIX25_CloudFlow_Paper_Poster.pdf), also presented at _USENIX Security 2025_.
 
 [![CloudFlow: Identifying Security-sensitive Data Flows in Serverless Applications](https://img.youtube.com/vi/Jd3kmfkk2dQ/0.jpg)](https://www.youtube.com/watch?v=Jd3kmfkk2dQ)
 
